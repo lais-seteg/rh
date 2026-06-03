@@ -104,9 +104,7 @@ function getAcoesDisponiveis(usuario, item) {
       { label: "Reprovar", novoStatus: "Reprovada pelo gestor", reqObs: true },
       { label: "Devolver para ajuste", novoStatus: "Devolvida para ajuste", reqObs: true }
     ];
-    if (s === "Aprovada pelo gestor") return [
-      { label: "Encaminhar ao RH", novoStatus: "Encaminhada ao RH", reqObs: false }
-    ];
+    if (s === "Aprovada pelo gestor") return [];
     if (s === "Devolvida para ajuste") return [
       { label: "Reenviar ao gestor", novoStatus: "Aguardando análise do gestor", reqObs: false }
     ];
@@ -666,6 +664,22 @@ function afterFormRender() {
   if (tm) tm.addEventListener("change", toggleTipoMudancaOutro);
   const bo = document.getElementById("f_chk_outros");
   if (bo) bo.addEventListener("change", toggleBenefOutros);
+
+  // Enter em input/select envia o formulário; Ctrl+Enter em textarea também.
+  // Remove listener anterior para evitar disparos múltiplos ao trocar tipo de formulário.
+  const formBody = document.getElementById("formBody");
+  if (formBody) {
+    if (formBody._enterHandler) {
+      formBody.removeEventListener("keydown", formBody._enterHandler);
+    }
+    formBody._enterHandler = function(e) {
+      if (e.key !== "Enter") return;
+      if (e.target.tagName === "TEXTAREA" && !e.ctrlKey) return;
+      e.preventDefault();
+      salvarSolicitacao();
+    };
+    formBody.addEventListener("keydown", formBody._enterHandler);
+  }
 }
 
 function toggleFormOutro() {
@@ -854,7 +868,15 @@ function salvarSolicitacao() {
       dataAtualizacao: new Date().toISOString()
     };
     solicitacoes.unshift(novo);
-    mostrarToast("Solicitação enviada com sucesso.");
+    salvarLocal();
+    const _origemSucesso = formOrigin;
+    document.getElementById("sucessoNumero").textContent = "Protocolo " + id;
+    document.getElementById("btnSucessoOk").onclick = () => {
+      fecharModal("modalSucesso");
+      mostrarView(_origemSucesso);
+    };
+    document.getElementById("modalSucesso").classList.add("active");
+    return;
   }
 
   salvarLocal();
@@ -996,6 +1018,23 @@ function salvarDecisao() {
     updates.dataAnaliseRh = new Date().toISOString();
     updates.rhAnalise     = usuarioAtual.nome.toUpperCase();
     updates.decisaoRh     = acao.label.toUpperCase();
+  }
+
+  // ── Encaminhamento automático ao RH após decisão do gestor ───────────
+  const decisoesGestorQueEncaminham = ["Aprovada pelo gestor", "Reprovada pelo gestor"];
+  if (usuarioAtual.perfil === "gestao" && decisoesGestorQueEncaminham.includes(acao.novoStatus)) {
+    const encaminharEntry = {
+      data: new Date().toISOString(),
+      usuario: "SISTEMA",
+      perfil: "AUTOMÁTICO",
+      acao: "ENCAMINHADA AO RH",
+      statusAnterior: acao.novoStatus,
+      novoStatus: "Encaminhada ao RH",
+      obs: "Encaminhamento automático após decisão do gestor."
+    };
+    updates.status = "Encaminhada ao RH";
+    updates.historico = [...updates.historico, encaminharEntry];
+    updates.dataAtualizacao = new Date().toISOString();
   }
 
   solicitacoes[idx] = { ...item, ...updates };
@@ -1240,20 +1279,46 @@ function minhaLista() {
   return solicitacoes.filter(s => podeVerSolicitacao(usuarioAtual, s));
 }
 
-// ── Organograma ───────────────────────────────────────────────────────────
-function getGestoresComLideres() {
-  return usuarios
-    .filter(u => u.perfil === "gestao")
-    .map(u => ({
-      nome: u.nome,
-      setor: u.setor,
-      lideres: u.lideresVinculados || []
-    }));
-}
+// ── Organograma — estado ──────────────────────────────────────────────────
+let _orgGestores        = [];
+let _orgLideres         = [];
+let _orgEditGestorId    = null;
+let _orgEditLiderId     = null;
+let _orgAddLiderGestId  = null;
+let _orgDelGestorId     = null;
+let _orgDelLiderId      = null;
 
-function renderOrganograma() {
+async function renderOrganograma() {
   const el = document.getElementById("orgContent");
   if (!el) return;
+  el.innerHTML = `<div class="org-loading">Carregando organograma...</div>`;
+
+  const [gestores, lideres] = await Promise.all([
+    sbCarregarGestores(),
+    sbCarregarLideres()
+  ]);
+
+  // Fallback para dados estáticos se as tabelas ainda não existirem
+  if (gestores.length === 0 && lideres.length === 0) {
+    _orgGestores = usuarios
+      .filter(u => u.perfil === "gestao")
+      .map(u => ({ id: u.nome, nome: u.nome, setor: u.setor }));
+    _orgLideres = usuarios
+      .filter(u => u.perfil === "lider")
+      .map(u => ({ id: u.nome, nome: u.nome, setor: u.setor, gestor_id: u.gestor }));
+  } else {
+    _orgGestores = gestores;
+    _orgLideres  = lideres;
+  }
+
+  renderOrganogramaUI();
+}
+
+function renderOrganogramaUI() {
+  const el = document.getElementById("orgContent");
+  if (!el) return;
+
+  const canAdmin = ["rh", "direcao"].includes(usuarioAtual.perfil);
 
   // ── LÍDER: card "Meu Gestor" ──────────────────────────────────────────
   if (usuarioAtual.perfil === "lider") {
@@ -1278,8 +1343,8 @@ function renderOrganograma() {
     return;
   }
 
-  // ── GESTÃO / RH / DIREÇÃO: accordion por gestor ───────────────────────
-  let gestores = getGestoresComLideres();
+  // ── GESTÃO: apenas o próprio grupo (somente visualização) ─────────────
+  let gestores = [..._orgGestores];
   if (usuarioAtual.perfil === "gestao") {
     gestores = gestores.filter(g => g.nome === usuarioAtual.nome);
   }
@@ -1289,18 +1354,41 @@ function renderOrganograma() {
     return;
   }
 
-  el.innerHTML = `<div class="acc-wrapper">${gestores.map((g, i) => {
-    const n = g.lideres.length;
-    const countTxt = n === 1
-      ? "1 líder vinculado"
-      : `${n} líderes vinculados`;
+  const adminHeaderHTML = canAdmin
+    ? `<div class="org-admin-header">
+        <button class="btn btn-primary" onclick="abrirModalNovoGestor()">+ Novo Gestor</button>
+      </div>`
+    : "";
+
+  const accordionsHTML = gestores.map((g, i) => {
+    const meuLideres = _orgLideres.filter(l => l.gestor_id === g.id);
+    const n = meuLideres.length;
+    const countTxt = n === 1 ? "1 líder vinculado" : `${n} líderes vinculados`;
+
     const leadersHTML = n
-      ? g.lideres.map(l =>
-          `<div class="acc-leader-row">
+      ? meuLideres.map(l => `
+          <div class="acc-leader-row">
             <span class="acc-leader-dot">•</span>
-            <span class="acc-leader-name">${esc(l)}</span>
+            <span class="acc-leader-name">${esc(l.nome)}</span>
+            ${canAdmin ? `<div class="acc-leader-admin">
+              <button class="btn-org-leader btn-org-leader-edit" title="Editar líder"
+                onclick="abrirModalEditarLider('${esc(String(l.id))}')">✏</button>
+              <button class="btn-org-leader btn-org-leader-delete" title="Excluir líder"
+                onclick="abrirModalExcluirLider('${esc(String(l.id))}')">✕</button>
+            </div>` : ""}
           </div>`).join("")
       : `<em style="color:var(--text-muted);font-size:.78rem">Nenhum líder vinculado.</em>`;
+
+    const adminFooterHTML = canAdmin
+      ? `<div class="acc-admin-footer">
+          <button class="btn-org-action btn-org-add"
+            onclick="abrirModalAdicionarLider('${esc(String(g.id))}')">➕ Adicionar Líder</button>
+          <button class="btn-org-action btn-org-edit"
+            onclick="abrirModalEditarGestor('${esc(String(g.id))}')">✏ Editar</button>
+          <button class="btn-org-action btn-org-delete"
+            onclick="abrirModalExcluirGestor('${esc(String(g.id))}')">🗑 Excluir</button>
+        </div>`
+      : "";
 
     return `
       <div class="acc-item" id="acc-${i}">
@@ -1315,10 +1403,13 @@ function renderOrganograma() {
         <div class="acc-body">
           <div class="acc-body-inner">
             <div class="acc-leaders">${leadersHTML}</div>
+            ${adminFooterHTML}
           </div>
         </div>
       </div>`;
-  }).join("")}</div>`;
+  }).join("");
+
+  el.innerHTML = adminHeaderHTML + `<div class="acc-wrapper">${accordionsHTML}</div>`;
 }
 
 function toggleAcc(idx) {
@@ -1328,6 +1419,173 @@ function toggleAcc(idx) {
   const nowOpen = !item.classList.contains("open");
   item.classList.toggle("open", nowOpen);
   if (body) body.classList.toggle("open", nowOpen);
+}
+
+// ── Org: Gestor — Novo ────────────────────────────────────────────────────
+function abrirModalNovoGestor() {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  document.getElementById("orgGestorNome").value = "";
+  document.getElementById("orgGestorSetor").value = "";
+  document.getElementById("modalNovoGestor").classList.add("active");
+  document.getElementById("orgGestorNome").focus();
+}
+
+async function salvarNovoGestor() {
+  const nome  = document.getElementById("orgGestorNome").value.trim();
+  const setor = document.getElementById("orgGestorSetor").value.trim();
+  if (!nome)  { mostrarToast("Informe o nome do gestor."); return; }
+  if (!setor) { mostrarToast("Informe o setor."); return; }
+  const btn = document.getElementById("btnSalvarNovoGestor");
+  btn.disabled = true; btn.textContent = "Salvando...";
+  try {
+    await sbCriarGestor(nome, setor);
+    fecharModal("modalNovoGestor");
+    mostrarToast("Gestor criado com sucesso.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao salvar gestor. Verifique a conexão.");
+    console.error("[org] salvarNovoGestor:", e);
+  } finally {
+    btn.disabled = false; btn.textContent = "Salvar";
+  }
+}
+
+// ── Org: Gestor — Editar ──────────────────────────────────────────────────
+function abrirModalEditarGestor(id) {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  const g = _orgGestores.find(x => String(x.id) === String(id));
+  if (!g) return;
+  _orgEditGestorId = id;
+  document.getElementById("editGestorId").value  = id;
+  document.getElementById("editGestorNome").value = g.nome;
+  document.getElementById("editGestorSetor").value = g.setor;
+  document.getElementById("modalEditarGestor").classList.add("active");
+  document.getElementById("editGestorNome").focus();
+}
+
+async function salvarEditarGestor() {
+  const id    = _orgEditGestorId;
+  const nome  = document.getElementById("editGestorNome").value.trim();
+  const setor = document.getElementById("editGestorSetor").value.trim();
+  if (!nome)  { mostrarToast("Informe o nome."); return; }
+  if (!setor) { mostrarToast("Informe o setor."); return; }
+  try {
+    await sbEditarGestor(id, nome, setor);
+    fecharModal("modalEditarGestor");
+    mostrarToast("Gestor atualizado com sucesso.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao atualizar gestor.");
+    console.error("[org] salvarEditarGestor:", e);
+  }
+}
+
+// ── Org: Gestor — Excluir ─────────────────────────────────────────────────
+function abrirModalExcluirGestor(id) {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  _orgDelGestorId = id;
+  document.getElementById("excluirGestorId").value = id;
+  document.getElementById("modalExcluirGestor").classList.add("active");
+}
+
+async function confirmarExcluirGestor() {
+  const id = _orgDelGestorId;
+  if (!id) return;
+  try {
+    await sbExcluirGestor(id);
+    fecharModal("modalExcluirGestor");
+    mostrarToast("Gestor excluído.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao excluir gestor.");
+    console.error("[org] confirmarExcluirGestor:", e);
+  }
+}
+
+// ── Org: Líder — Adicionar ────────────────────────────────────────────────
+function abrirModalAdicionarLider(gestorId) {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  _orgAddLiderGestId = gestorId;
+  document.getElementById("addLiderGestorId").value = gestorId;
+  document.getElementById("addLiderNome").value = "";
+  document.getElementById("addLiderSetor").value = "";
+  document.getElementById("modalAdicionarLider").classList.add("active");
+  document.getElementById("addLiderNome").focus();
+}
+
+async function salvarAdicionarLider() {
+  const gestorId = _orgAddLiderGestId;
+  const nome  = document.getElementById("addLiderNome").value.trim();
+  const setor = document.getElementById("addLiderSetor").value.trim();
+  if (!nome)  { mostrarToast("Informe o nome do líder."); return; }
+  if (!setor) { mostrarToast("Informe o setor."); return; }
+  try {
+    await sbCriarLider(nome, setor, gestorId);
+    fecharModal("modalAdicionarLider");
+    mostrarToast("Líder adicionado com sucesso.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao adicionar líder.");
+    console.error("[org] salvarAdicionarLider:", e);
+  }
+}
+
+// ── Org: Líder — Editar ───────────────────────────────────────────────────
+function abrirModalEditarLider(id) {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  const l = _orgLideres.find(x => String(x.id) === String(id));
+  if (!l) return;
+  _orgEditLiderId = id;
+  document.getElementById("editLiderId").value    = id;
+  document.getElementById("editLiderNome").value  = l.nome;
+  document.getElementById("editLiderSetor").value = l.setor;
+  const sel = document.getElementById("editLiderGestorId");
+  sel.innerHTML = _orgGestores.map(g =>
+    `<option value="${esc(String(g.id))}" ${String(g.id) === String(l.gestor_id) ? "selected" : ""}>${esc(g.nome)}</option>`
+  ).join("");
+  document.getElementById("modalEditarLider").classList.add("active");
+  document.getElementById("editLiderNome").focus();
+}
+
+async function salvarEditarLider() {
+  const id       = _orgEditLiderId;
+  const nome     = document.getElementById("editLiderNome").value.trim();
+  const setor    = document.getElementById("editLiderSetor").value.trim();
+  const gestorId = document.getElementById("editLiderGestorId").value;
+  if (!nome)     { mostrarToast("Informe o nome."); return; }
+  if (!setor)    { mostrarToast("Informe o setor."); return; }
+  if (!gestorId) { mostrarToast("Selecione o gestor responsável."); return; }
+  try {
+    await sbEditarLider(id, nome, setor, gestorId);
+    fecharModal("modalEditarLider");
+    mostrarToast("Líder atualizado com sucesso.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao atualizar líder.");
+    console.error("[org] salvarEditarLider:", e);
+  }
+}
+
+// ── Org: Líder — Excluir ──────────────────────────────────────────────────
+function abrirModalExcluirLider(id) {
+  if (!["rh","direcao"].includes(usuarioAtual.perfil)) return;
+  _orgDelLiderId = id;
+  document.getElementById("excluirLiderId").value = id;
+  document.getElementById("modalExcluirLider").classList.add("active");
+}
+
+async function confirmarExcluirLider() {
+  const id = _orgDelLiderId;
+  if (!id) return;
+  try {
+    await sbExcluirLider(id);
+    fecharModal("modalExcluirLider");
+    mostrarToast("Líder excluído.");
+    await renderOrganograma();
+  } catch(e) {
+    mostrarToast("Erro ao excluir líder.");
+    console.error("[org] confirmarExcluirLider:", e);
+  }
 }
 
 // ── Utilitários ───────────────────────────────────────────────────────────
@@ -1385,9 +1643,9 @@ function tipoBadge(tipo) {
 }
 
 function formatarData(d) {
-  if (!d) return "-";
+  if (!d || typeof d !== "string") return "-";
   const dt = d.length > 10 ? new Date(d) : new Date(d + "T00:00:00");
-  return isNaN(dt) ? d : dt.toLocaleDateString("pt-BR");
+  return isNaN(dt.getTime()) ? d : dt.toLocaleDateString("pt-BR");
 }
 
 function formatarDataHora(d) {
@@ -1453,6 +1711,12 @@ function vincularListeners() {
   document.getElementById("btnSalvarForm").addEventListener("click", salvarSolicitacao);
   document.getElementById("btnLimparForm").addEventListener("click", () => {
     if (confirm("Limpar todos os campos?")) renderFormPorTipo(tipoFormAtual, null);
+  });
+
+  // Modal sucesso
+  document.getElementById("btnSucessoOk").addEventListener("click", () => {
+    fecharModal("modalSucesso");
+    mostrarView(formOrigin);
   });
 
   // Modal decisão

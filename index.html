@@ -37,10 +37,8 @@
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="images/LOGO.png" alt="Logo" onerror="this.style.display='none'" />
-      <div class="sidebar-brand">
-        <span class="sidebar-brand-name">PORTAL RH</span>
-        <span class="sidebar-brand-sub">Requisições de Pessoal</span>
-      </div>
+      <span class="sidebar-brand-name">PORTAL RH</span>
+      <span class="sidebar-brand-sub">Requisições de Pessoal</span>
     </div>
 
     <nav class="sidebar-nav">
@@ -96,18 +94,15 @@
           <div class="tipo-cards">
             <button class="tipo-card" data-tipo="selecao">
               <span class="tipo-icon">👤</span>
-              <strong>Requisição de Pessoal</strong>
-              <span>Seleção</span>
+              <strong>REQUISIÇÃO DE PESSOAL POR SELEÇÃO EXTERNA</strong>
             </button>
             <button class="tipo-card" data-tipo="indicacao">
               <span class="tipo-icon">🤝</span>
-              <strong>Requisição de Pessoal</strong>
-              <span>Indicação</span>
+              <strong>REQUISIÇÃO DE PESSOAL POR INDICAÇÃO</strong>
             </button>
             <button class="tipo-card" data-tipo="mudancaCargo">
               <span class="tipo-icon">🔄</span>
-              <strong>Solicitação de Mudança</strong>
-              <span>de Cargo</span>
+              <strong>SOLICITAÇÃO DE MUDANÇA DE CARGO</strong>
             </button>
           </div>
         </div>
@@ -315,8 +310,166 @@
   </div>
 </div>
 
+<!-- Modal Sucesso Solicitação -->
+<div id="modalSucesso" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-body modal-body-sucesso">
+      <div class="sucesso-icon-wrap">✓</div>
+      <h2 class="sucesso-titulo">Solicitação Enviada</h2>
+      <p class="sucesso-subtitulo">com Sucesso!</p>
+      <p id="sucessoNumero" class="sucesso-numero"></p>
+      <p class="sucesso-hint">Aguardando análise do gestor responsável.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center">
+      <button class="btn btn-primary" id="btnSucessoOk">OK, entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Gestor -->
+<div id="modalNovoGestor" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Novo Gestor</h2>
+      <button class="modal-close" onclick="fecharModal('modalNovoGestor')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Nome</label>
+        <input id="orgGestorNome" class="form-control" placeholder="Nome do gestor" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Setor</label>
+        <input id="orgGestorSetor" class="form-control" placeholder="Setor" autocomplete="off" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalNovoGestor')">Cancelar</button>
+      <button id="btnSalvarNovoGestor" class="btn btn-primary" onclick="salvarNovoGestor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Gestor -->
+<div id="modalEditarGestor" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Editar Gestor</h2>
+      <button class="modal-close" onclick="fecharModal('modalEditarGestor')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editGestorId" />
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Nome</label>
+        <input id="editGestorNome" class="form-control" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Setor</label>
+        <input id="editGestorSetor" class="form-control" autocomplete="off" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalEditarGestor')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditarGestor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Excluir Gestor -->
+<div id="modalExcluirGestor" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar Exclusão</h2>
+      <button class="modal-close" onclick="fecharModal('modalExcluirGestor')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-primary);margin-bottom:.5rem">Deseja realmente excluir este gestor?</p>
+      <p class="modal-hint">Os vínculos dos líderes também serão removidos. Esta ação não pode ser desfeita.</p>
+      <input type="hidden" id="excluirGestorId" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalExcluirGestor')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirGestor()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Líder -->
+<div id="modalAdicionarLider" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Adicionar Líder</h2>
+      <button class="modal-close" onclick="fecharModal('modalAdicionarLider')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="addLiderGestorId" />
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Nome do líder</label>
+        <input id="addLiderNome" class="form-control" placeholder="Nome do líder" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Setor</label>
+        <input id="addLiderSetor" class="form-control" placeholder="Setor" autocomplete="off" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalAdicionarLider')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAdicionarLider()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Líder -->
+<div id="modalEditarLider" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Editar Líder</h2>
+      <button class="modal-close" onclick="fecharModal('modalEditarLider')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editLiderId" />
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Nome</label>
+        <input id="editLiderNome" class="form-control" autocomplete="off" />
+      </div>
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Setor</label>
+        <input id="editLiderSetor" class="form-control" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Gestor responsável</label>
+        <select id="editLiderGestorId" class="form-control"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalEditarLider')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditarLider()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Excluir Líder -->
+<div id="modalExcluirLider" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar Exclusão</h2>
+      <button class="modal-close" onclick="fecharModal('modalExcluirLider')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-primary);margin-bottom:.5rem">Deseja realmente excluir este líder?</p>
+      <p class="modal-hint">Esta ação não pode ser desfeita.</p>
+      <input type="hidden" id="excluirLiderId" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalExcluirLider')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirLider()">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
+<script src="config.js"></script>
 <script src="supabase-config.js"></script>
 <script src="script.js"></script>
 </body>

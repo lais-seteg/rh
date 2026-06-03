@@ -3,13 +3,17 @@
 // Funciona com file://, Live Server e servidores web.
 // Os códigos de acesso ficam APENAS no banco de dados.
 
-const _SB_BASE = 'https://gpfitwckyqgmmyzncgpj.supabase.co/rest/v1';
+// Lê credenciais do config.js (arquivo gitignored — não vai ao repositório).
+// Se config.js não existir, exibe aviso no console.
+if (!window.SB_URL || !window.SB_KEY) {
+  console.error(
+    '[Config] config.js não encontrado ou incompleto.\n' +
+    'Renomeie config.example.js para config.js e preencha as credenciais.'
+  );
+}
 
-// IMPORTANTE: use a chave "anon public" do seu projeto Supabase.
-// Acesse: Supabase Dashboard → Project Settings → API → anon public
-// A chave correta começa com "eyJ..." (formato JWT) OU "sb_publishable_..."
-// se o seu projeto já usa o novo sistema de chaves.
-const _SB_KEY  = 'sb_publishable_4hBxkrCEKz1WhinTLh0Yog_Ccx8ps4j';
+const _SB_BASE = window.SB_URL || '';
+const _SB_KEY  = window.SB_KEY  || '';
 
 const _SB_HEADS = {
   'apikey':        _SB_KEY,
@@ -57,6 +61,135 @@ async function _sbGet(path) {
 
   return res.json();
 }
+
+// ── Função auxiliar de POST ───────────────────────────────────
+async function _sbPost(path, body) {
+  const url = _SB_BASE + path;
+  let res;
+  try {
+    res = await fetch(url, { method: 'POST', headers: _SB_HEADS, body: JSON.stringify(body) });
+  } catch (networkErr) {
+    throw new Error('Erro de rede: ' + networkErr.message);
+  }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => String(res.status));
+    throw new Error('Supabase ' + res.status + ': ' + txt);
+  }
+  return res.json().catch(() => null);
+}
+
+// ── Função auxiliar de PATCH ──────────────────────────────────
+async function _sbPatch(path, body) {
+  const url = _SB_BASE + path;
+  const headers = { ..._SB_HEADS, 'Prefer': 'return=minimal' };
+  let res;
+  try {
+    res = await fetch(url, { method: 'PATCH', headers, body: JSON.stringify(body) });
+  } catch (networkErr) {
+    throw new Error('Erro de rede: ' + networkErr.message);
+  }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => String(res.status));
+    throw new Error('Supabase ' + res.status + ': ' + txt);
+  }
+  return true;
+}
+
+// ── Organograma — funções de leitura ──────────────────────────
+async function sbCarregarGestores() {
+  try {
+    return await _sbGet('/gestores?ativo=eq.true&select=id,nome,setor&order=nome.asc');
+  } catch(e) {
+    console.error('[db] sbCarregarGestores:', e);
+    return [];
+  }
+}
+
+async function sbCarregarLideres() {
+  try {
+    return await _sbGet('/lideres?ativo=eq.true&select=id,nome,setor,gestor_id&order=nome.asc');
+  } catch(e) {
+    console.error('[db] sbCarregarLideres:', e);
+    return [];
+  }
+}
+
+// ── Organograma — funções de escrita ──────────────────────────
+async function sbCriarGestor(nome, setor) {
+  return _sbPost('/gestores', { nome, setor, ativo: true });
+}
+
+async function sbEditarGestor(id, nome, setor) {
+  return _sbPatch('/gestores?id=eq.' + encodeURIComponent(id), { nome, setor });
+}
+
+async function sbExcluirGestor(id) {
+  // Desvincula líderes antes de excluir o gestor (soft delete)
+  await _sbPatch('/lideres?gestor_id=eq.' + encodeURIComponent(id), { ativo: false }).catch(() => {});
+  return _sbPatch('/gestores?id=eq.' + encodeURIComponent(id), { ativo: false });
+}
+
+async function sbCriarLider(nome, setor, gestorId) {
+  return _sbPost('/lideres', { nome, setor, gestor_id: gestorId, ativo: true });
+}
+
+async function sbEditarLider(id, nome, setor, gestorId) {
+  return _sbPatch('/lideres?id=eq.' + encodeURIComponent(id), { nome, setor, gestor_id: gestorId });
+}
+
+async function sbExcluirLider(id) {
+  return _sbPatch('/lideres?id=eq.' + encodeURIComponent(id), { ativo: false });
+}
+
+/*
+  ═══════════════════════════════════════════════════════════════
+  SQL PARA CRIAÇÃO DAS TABELAS NO SUPABASE
+  ═══════════════════════════════════════════════════════════════
+  Execute no SQL Editor do Supabase (Settings → SQL Editor):
+
+  -- Tabela de gestores
+  CREATE TABLE IF NOT EXISTS gestores (
+    id     UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    nome   TEXT NOT NULL,
+    setor  TEXT NOT NULL,
+    ativo  BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- Tabela de líderes
+  CREATE TABLE IF NOT EXISTS lideres (
+    id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    nome       TEXT NOT NULL,
+    setor      TEXT NOT NULL,
+    gestor_id  UUID REFERENCES gestores(id),
+    ativo      BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+  );
+
+  -- Políticas RLS (permitir acesso anônimo via chave anon)
+  ALTER TABLE gestores ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE lideres  ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "anon_select_gestores" ON gestores FOR SELECT TO anon USING (true);
+  CREATE POLICY "anon_insert_gestores" ON gestores FOR INSERT TO anon WITH CHECK (true);
+  CREATE POLICY "anon_update_gestores" ON gestores FOR UPDATE TO anon USING (true);
+
+  CREATE POLICY "anon_select_lideres"  ON lideres  FOR SELECT TO anon USING (true);
+  CREATE POLICY "anon_insert_lideres"  ON lideres  FOR INSERT TO anon WITH CHECK (true);
+  CREATE POLICY "anon_update_lideres"  ON lideres  FOR UPDATE TO anon USING (true);
+
+  -- Dados iniciais (execute após criar as tabelas)
+  INSERT INTO gestores (nome, setor) VALUES
+    ('Gustavo Toledo',    'Projetos'),
+    ('Hugo',              'Inovação'),
+    ('Haddad',            'Financeiro'),
+    ('Matheus Fontenelle','Comercial');
+
+  -- Após criar gestores, use os IDs retornados para inserir líderes:
+  -- INSERT INTO lideres (nome, setor, gestor_id) VALUES
+  --   ('Lizabeth Silva', 'Projetos', '<id_gustavo>'), ...
+  ═══════════════════════════════════════════════════════════════
+*/
 
 // ── Autenticar pelo código de acesso ─────────────────────────
 async function autenticarPorCodigo(codigo) {

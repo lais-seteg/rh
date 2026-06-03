@@ -1,0 +1,23 @@
+# Credenciais — NUNCA versionar
+config.js
+
+# Claude Code
+.claude/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node (caso venha a usar)
+node_modules/
