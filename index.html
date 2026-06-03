@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal RH – Requisições Internas de Pessoal</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="images/LOGO.png" alt="Logo" onerror="this.style.display='none'" />
+    </div>
+    <h1 class="login-title">PORTAL RH</h1>
+    <p class="login-subtitle">Requisições Internas de Pessoal</p>
+    <div class="login-form">
+      <label class="form-label">Código de acesso</label>
+      <input id="inputCodigo" class="form-control" type="password" placeholder="Digite seu código de acesso" autocomplete="off" />
+      <p id="loginErro" class="login-erro hidden">Código inválido. Tente novamente.</p>
+      <button id="btnEntrar" class="btn btn-primary btn-full">Entrar</button>
+    </div>
+    <p class="login-footer-text">Seteg Soluções Ambientais · 2026</p>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="appScreen" class="app-screen hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="images/LOGO.png" alt="Logo" onerror="this.style.display='none'" />
+      <div class="sidebar-brand">
+        <span class="sidebar-brand-name">PORTAL RH</span>
+        <span class="sidebar-brand-sub">Requisições de Pessoal</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">⊞</span><span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="novaSolicitacao">
+        <span class="nav-icon">⊕</span><span>Nova Solicitação</span>
+      </button>
+      <button class="nav-item" data-view="solicitacoes">
+        <span class="nav-icon">≡</span><span>Solicitações</span>
+      </button>
+      <button class="nav-item" data-view="configuracoes">
+        <span class="nav-icon">◈</span><span>Organograma</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">G</div>
+        <div class="sidebar-user-info">
+          <strong id="sidebarNome">Usuário</strong>
+          <span id="sidebarPerfil">Perfil</span>
+          <span id="sidebarSetor" class="sidebar-user-detail"></span>
+          <span id="sidebarGestor" class="sidebar-user-detail" style="display:none"></span>
+        </div>
+      </div>
+      <button id="btnSair" class="btn-sair" title="Sair do sistema">⏻</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-wrapper">
+    <header class="top-bar">
+      <h2 id="topBarTitle">Dashboard</h2>
+      <div class="top-bar-right">
+        <span id="topBoasVindas" class="top-bar-welcome"></span>
+        <span class="perfil-badge" id="topPerfil">Gestão</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+
+      <!-- VIEW: Dashboard -->
+      <section id="viewDashboard" class="view active">
+        <div id="dashContent"></div>
+      </section>
+
+      <!-- VIEW: Tipo de Solicitação -->
+      <section id="viewNovaSolicitacao" class="view">
+        <div class="tipo-selector">
+          <p class="tipo-selector-label">Selecione o tipo de requisição para continuar</p>
+          <div class="tipo-cards">
+            <button class="tipo-card" data-tipo="selecao">
+              <span class="tipo-icon">👤</span>
+              <strong>Requisição de Pessoal</strong>
+              <span>Seleção</span>
+            </button>
+            <button class="tipo-card" data-tipo="indicacao">
+              <span class="tipo-icon">🤝</span>
+              <strong>Requisição de Pessoal</strong>
+              <span>Indicação</span>
+            </button>
+            <button class="tipo-card" data-tipo="mudancaCargo">
+              <span class="tipo-icon">🔄</span>
+              <strong>Solicitação de Mudança</strong>
+              <span>de Cargo</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: Formulário -->
+      <section id="viewFormulario" class="view">
+        <div class="form-rh-container">
+          <div class="form-rh-header">
+            <div>
+              <h2 id="formTitulo">Formulário</h2>
+              <span id="formSubtitulo" class="form-tipo-badge"></span>
+            </div>
+            <button id="btnVoltarForm" class="btn-voltar">← Voltar</button>
+          </div>
+          <div id="formBody" class="form-rh-body"></div>
+          <div class="form-rh-footer">
+            <button id="btnLimparForm" class="btn btn-ghost">Limpar</button>
+            <button id="btnSalvarForm" class="btn btn-primary">Salvar Solicitação</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: Solicitações -->
+      <section id="viewSolicitacoes" class="view">
+        <div class="list-wrap">
+          <div class="list-header">
+            <div class="filter-pills" id="filterPills">
+              <button class="filter-pill active" data-status="">Todas</button>
+              <button class="filter-pill" data-status="Aguardando análise do gestor">Aguard. Gestor</button>
+              <button class="filter-pill" data-status="Aprovada pelo gestor">Aprov. Gestor</button>
+              <button class="filter-pill" data-status="Reprovada pelo gestor">Reprov. Gestor</button>
+              <button class="filter-pill" data-status="Encaminhada ao RH">Enc. ao RH</button>
+              <button class="filter-pill" data-status="Em análise pelo RH">Análise RH</button>
+              <button class="filter-pill" data-status="Aprovada pelo RH">Aprov. RH</button>
+              <button class="filter-pill" data-status="Reprovada pelo RH">Reprov. RH</button>
+              <button class="filter-pill" data-status="Aprovada pela Direção">Aprov. Direção</button>
+              <button class="filter-pill" data-status="Reprovada pela Direção">Reprov. Direção</button>
+              <button class="filter-pill" data-status="Devolvida para ajuste">Devolvida</button>
+              <button class="filter-pill" data-status="Finalizada">Finalizada</button>
+            </div>
+            <input id="buscaLista" class="form-control search-input" placeholder="Buscar cargo, projeto, solicitante..." />
+          </div>
+
+          <!-- Filtros avançados -->
+          <div class="list-filters">
+            <div class="filtro-item">
+              <select id="filtroTipoSol" class="form-control filter-sel">
+                <option value="">Tipo</option>
+                <option value="selecao">Seleção</option>
+                <option value="indicacao">Indicação</option>
+                <option value="mudancaCargo">Mudança de Cargo</option>
+              </select>
+            </div>
+            <div class="filtro-item">
+              <select id="filtroSolicitante" class="form-control filter-sel"><option value="">Solicitante</option></select>
+            </div>
+            <div class="filtro-item">
+              <select id="filtroGestorResp" class="form-control filter-sel"><option value="">Gestor</option></select>
+            </div>
+            <div class="filtro-item">
+              <select id="filtroSetorSol" class="form-control filter-sel"><option value="">Setor</option></select>
+            </div>
+            <div class="filtro-item">
+              <input id="filtroDataCriacao" type="date" class="form-control filter-sel" title="Data de criação" />
+            </div>
+            <button id="btnLimparFiltros" class="btn btn-ghost" style="height:32px;padding:.2rem .7rem;font-size:.73rem;flex-shrink:0">Limpar</button>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table class="art-table">
+                <thead>
+                  <tr>
+                    <th>Nº</th>
+                    <th>Tipo</th>
+                    <th>Solicitante</th>
+                    <th>Cargo / Vaga</th>
+                    <th>Projeto / Depto</th>
+                    <th>Status</th>
+                    <th>Criado em</th>
+                    <th>Atualizado</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelaBody"></tbody>
+              </table>
+              <div id="emptyState" class="table-empty">
+                <div class="empty-state">
+                  <div class="empty-icon">📋</div>
+                  <strong>Nenhuma solicitação encontrada</strong>
+                  <span>Crie uma nova solicitação para começar.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination-container">
+            <div id="paginationInfo" class="pagination-info">0 registros</div>
+            <div class="pagination-controls">
+              <button id="prevPage" class="btn-pagination">‹</button>
+              <span id="pageNumber" class="page-number">1</span>
+              <button id="nextPage" class="btn-pagination">›</button>
+            </div>
+            <div class="pagination-per-page">
+              <span>Por página:</span>
+              <select id="perPage"><option>10</option><option selected>20</option><option>50</option></select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: Organograma -->
+      <section id="viewConfiguracoes" class="view">
+        <div class="org-page-header">
+          <h2 class="org-page-title">Organograma de Gestão</h2>
+          <p class="org-page-subtitle">Estrutura de vínculo entre gestores e líderes.</p>
+        </div>
+        <div id="orgContent"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══ MODAIS ═══ -->
+
+<!-- Visualizar -->
+<div id="modalDetalhes" class="modal-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="modalDetalhesTitulo">Detalhes da Solicitação</h2>
+      <button class="modal-close" onclick="fecharModal('modalDetalhes')">×</button>
+    </div>
+    <div id="modalDetalhesBody" class="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalDetalhes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Decisão -->
+<div id="modalDecisao" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div>
+        <h2>Confirmar Decisão</h2>
+        <p id="modalDecisaoSub" class="modal-sub"></p>
+      </div>
+      <button class="modal-close" onclick="fecharModal('modalDecisao')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="decisaoId" />
+      <p class="decisao-prompt">Selecione a ação:</p>
+      <div id="decisaoAcoes" class="decisao-acoes"></div>
+      <div id="decisaoObsWrap" style="display:none;margin-top:1.1rem">
+        <label class="form-label required" id="decisaoObsLabel">Observação / Justificativa</label>
+        <textarea id="decisaoObs" class="form-control" rows="4"
+          placeholder="Preencha a observação obrigatória..."></textarea>
+        <p class="modal-hint">Campo obrigatório para confirmar esta ação.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalDecisao')">Cancelar</button>
+      <button id="btnConfirmarDecisao" class="btn btn-primary" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Excluir -->
+<div id="modalExcluir" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar Exclusão</h2>
+      <button class="modal-close" onclick="fecharModal('modalExcluir')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-primary);margin-bottom:.5rem">Tem certeza que deseja excluir esta solicitação?</p>
+      <p class="modal-hint">Esta ação não pode ser desfeita.</p>
+      <input type="hidden" id="excluirId" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalExcluir')">Cancelar</button>
+      <button id="btnConfirmarExcluir" class="btn btn-primary" style="background:var(--red)">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Sair -->
+<div id="modalSair" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar saída</h2>
+      <button class="modal-close" onclick="fecharModal('modalSair')">×</button>
+    </div>
+    <div class="modal-body modal-body-sair">
+      <div class="sair-icon-wrap">⏻</div>
+      <p class="sair-msg">Deseja realmente sair do sistema?</p>
+      <p class="modal-hint">Você será redirecionado para a tela de login.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalSair')">Cancelar</button>
+      <button id="btnConfirmarSair" class="btn btn-sair-confirmar">Sair</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="supabase-config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
