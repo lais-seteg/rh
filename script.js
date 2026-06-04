@@ -1732,6 +1732,17 @@ function vincularListeners() {
   document.getElementById("btnEntrar").addEventListener("click", () => login());
   document.getElementById("inputCodigo").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
 
+  // Toggle visibilidade da senha no login
+  document.getElementById("btnToggleSenha").addEventListener("click", () => {
+    const campo  = document.getElementById("inputCodigo");
+    const aberto = document.getElementById("iconOlhoAberto");
+    const fechado = document.getElementById("iconOlhoFechado");
+    const visivel = campo.type === "text";
+    campo.type = visivel ? "password" : "text";
+    aberto.style.display  = visivel ? "" : "none";
+    fechado.style.display = visivel ? "none" : "";
+  });
+
   // Logout — abre modal de confirmação
   document.getElementById("btnSair").addEventListener("click", () => {
     document.getElementById("modalSair").classList.add("active");

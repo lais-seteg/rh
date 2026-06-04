@@ -38,6 +38,14 @@ body::before{content:'';position:fixed;inset:0;background:rgba(6,13,31,0.92);z-i
 .login-form{width:100%;display:flex;flex-direction:column;gap:.65rem}
 .login-erro{font-size:.75rem;color:var(--red);text-align:center;padding:.35rem;
   background:rgba(255,93,93,.1);border-radius:var(--radius-sm);border:1px solid rgba(255,93,93,.3)}
+.input-password-wrap{position:relative;width:100%}
+.input-password-wrap .form-control{padding-right:2.6rem;width:100%}
+.btn-toggle-password{position:absolute;right:.65rem;top:50%;transform:translateY(-50%);
+  background:none;border:none;padding:0;margin:0;cursor:pointer;
+  color:var(--text-muted);display:flex;align-items:center;justify-content:center;
+  line-height:0;transition:color .15s}
+.btn-toggle-password:hover{color:var(--text-secondary)}
+.btn-toggle-password:focus-visible{outline:2px solid var(--blue-light);outline-offset:2px;border-radius:3px}
 .btn-full{width:100%;justify-content:center;padding:.6rem;font-size:.9rem}
 .login-footer-text{font-size:.65rem;color:var(--text-muted);text-align:center;margin-top:.5rem}
 
