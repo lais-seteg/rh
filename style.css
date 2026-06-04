@@ -6,7 +6,7 @@
   --bg-primary:#0C1835;--bg-secondary:#122045;--bg-card:#162654;
   --bg-card-hover:#1D3066;--bg-input:#122045;
   --border-color:#264175;--border-light:#355696;
-  --text-primary:#E8ECF4;--text-secondary:#8A95B0;--text-muted:#7A85A0;
+  --text-primary:#F0F3FA;--text-secondary:#B8C4D8;--text-muted:#9AAABB;
   --radius-sm:8px;--radius-md:12px;--radius-lg:16px;
   --shadow-card:0 4px 12px rgba(0,0,0,.4);--shadow-lg:0 8px 32px rgba(0,0,0,.6);
   --transition:all .25s ease;
@@ -129,7 +129,7 @@ body::before{content:'';position:fixed;inset:0;background:rgba(6,13,31,0.92);z-i
   text-align:center;font-family:var(--font)}
 .tipo-card:hover{border-color:var(--orange);background:var(--bg-card-hover);
   transform:translateY(-4px);box-shadow:0 10px 32px rgba(255,130,0,.22)}
-.tipo-icon{font-size:7rem;line-height:1;display:block}
+.tipo-icon{font-size:7rem!important;line-height:1!important;display:block!important}
 .tipo-card strong{color:#fff;font-size:1rem;font-weight:700}
 .tipo-card span{color:var(--text-secondary);font-size:.82rem}
 
@@ -204,6 +204,34 @@ textarea.form-control{resize:vertical}
 .filter-pill:hover{background:var(--bg-card-hover);color:#fff}
 .filter-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .search-input{min-width:240px;padding:.35rem .65rem;font-size:.78rem}
+
+/* ── Filtro de origem (gestores) ────────────────────────────────────────── */
+.filtro-origem-wrap {
+  display: flex;
+  gap: .4rem;
+  padding: .6rem 1rem .5rem;
+  background: rgba(255,130,0,.04);
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+.filtro-origem-pill {
+  padding: .28rem .9rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: .74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.filtro-origem-pill:hover { background: var(--bg-card-hover); color: #fff; }
+.filtro-origem-pill.active {
+  background: rgba(255,130,0,.18);
+  border-color: var(--orange);
+  color: var(--orange);
+}
 
 /* ── Filtros avançados ─────────────────────────────────────────────────── */
 .list-filters{display:flex;align-items:center;gap:.4rem;padding:.5rem .85rem;
@@ -1263,5 +1291,64 @@ body.dash-active .top-bar { display: none; }
   .tipo-cards{grid-template-columns:1fr}
   .tipo-card{min-height:175px;padding:1.75rem 1.25rem;gap:1rem}
   .tipo-card strong{font-size:.85rem}
-  .tipo-icon{font-size:3.2rem}
+  .tipo-icon{font-size:3.2rem!important}
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   LEGIBILIDADE — fontes e cores de texto mais vivos
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Sidebar */
+.sidebar-user-info span      { font-size: .72rem; }
+.sidebar-user-detail         { font-size: .7rem;  }
+
+/* Nav items */
+.nav-item                    { font-size: .9rem; color: var(--text-secondary); }
+
+/* KPI cards */
+.kpi-label                   { font-size: .72rem; }
+.kpi-desc                    { font-size: .72rem; color: var(--text-secondary); }
+
+/* Labels de formulário */
+.form-label                  { font-size: .8rem; color: var(--text-secondary); }
+.form-hint, .modal-hint      { font-size: .75rem; color: var(--text-secondary); }
+
+/* Tabela principal */
+.art-table th                { font-size: .7rem;  color: var(--text-secondary); }
+.art-table td                { font-size: .85rem; }
+
+/* Dashboard recentes */
+.dash-tipo-label             { font-size: .78rem; color: var(--text-secondary); }
+.dash-td-data                { font-size: .8rem;  color: var(--text-secondary); }
+.dash-table-full th          { font-size: .68rem; color: var(--text-secondary); }
+.dash-table-full td          { font-size: .84rem; }
+
+/* Paginação */
+.pagination-info             { font-size: .78rem; color: var(--text-secondary); }
+.pagination-per-page         { font-size: .78rem; color: var(--text-secondary); }
+
+/* Status badges */
+.status-badge                { font-size: .7rem; }
+
+/* Filtro pills */
+.filter-pill                 { font-size: .75rem; color: var(--text-secondary); }
+.filter-pill.active          { color: #fff; }
+
+/* Accordion organograma */
+.acc-setor                   { font-size: .8rem;  color: var(--text-secondary); }
+.acc-count                   { font-size: .76rem; color: var(--orange); }
+.acc-leader-name             { font-size: .9rem;  color: var(--text-primary); }
+
+/* Histórico timeline */
+.hist-data                   { font-size: .72rem; color: var(--text-secondary); }
+.hist-de, .hist-para         { font-size: .74rem; }
+.hist-obs                    { font-size: .8rem;  color: var(--text-secondary); }
+
+/* Boas-vindas dashboard */
+.dash-welcome-bar span       { font-size: .82rem; color: var(--text-secondary); }
+
+/* Top bar */
+.top-bar-welcome             { font-size: .8rem; color: var(--text-secondary); }
+
+/* Tipo selector label */
+.tipo-selector-label         { font-size: .88rem; color: var(--text-secondary); }

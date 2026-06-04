@@ -93,15 +93,15 @@
           <p class="tipo-selector-label">Selecione o tipo de requisição para continuar</p>
           <div class="tipo-cards">
             <button class="tipo-card" data-tipo="selecao">
-              <span class="tipo-icon">👤</span>
+              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">👤</span>
               <strong>REQUISIÇÃO DE PESSOAL POR SELEÇÃO EXTERNA</strong>
             </button>
             <button class="tipo-card" data-tipo="indicacao">
-              <span class="tipo-icon">🤝</span>
+              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">🤝</span>
               <strong>REQUISIÇÃO DE PESSOAL POR INDICAÇÃO</strong>
             </button>
             <button class="tipo-card" data-tipo="mudancaCargo">
-              <span class="tipo-icon">🔄</span>
+              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">🔄</span>
               <strong>SOLICITAÇÃO DE MUDANÇA DE CARGO</strong>
             </button>
           </div>
@@ -129,6 +129,9 @@
       <!-- VIEW: Solicitações -->
       <section id="viewSolicitacoes" class="view">
         <div class="list-wrap">
+          <!-- Filtro de origem — visível apenas para gestores -->
+          <div id="filtroOrigemWrap" class="filtro-origem-wrap hidden"></div>
+
           <div class="list-header">
             <div class="filter-pills" id="filterPills">
               <button class="filter-pill active" data-status="">Todas</button>

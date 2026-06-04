@@ -63,6 +63,7 @@ const STATUS_LIST = [
 let solicitacoes = [];
 let usuarioAtual = null;
 let filtroStatus = "";
+let filtroOrigem = "";   // "" | "propria" | "liderados" — só usado por gestao
 let paginaAtual = 1;
 let tipoFormAtual = null;
 let idEdicaoAtual = null;
@@ -79,7 +80,10 @@ function podeVerSolicitacao(usuario, item) {
   if (usuario.perfil === "rh") return true;
   if (usuario.perfil === "direcao") return true;
   if (usuario.perfil === "lider") return criador === usuario.nome;
-  if (usuario.perfil === "gestao") return (usuario.lideresVinculados || []).includes(criador);
+  if (usuario.perfil === "gestao") {
+    return criador === usuario.nome ||
+           (usuario.lideresVinculados || []).includes(criador);
+  }
   return false;
 }
 
@@ -88,7 +92,10 @@ function podeAlterarStatus(usuario, item) {
   const criador = item.criadoPor || item.criadoPorNome || "";
   if (usuario.perfil === "rh") return true;
   if (usuario.perfil === "direcao") return true;
-  if (usuario.perfil === "gestao") return (usuario.lideresVinculados || []).includes(criador);
+  if (usuario.perfil === "gestao") {
+    return criador === usuario.nome ||
+           (usuario.lideresVinculados || []).includes(criador);
+  }
   return false;
 }
 
@@ -98,14 +105,17 @@ function getAcoesDisponiveis(usuario, item) {
   const criador = item.criadoPor || item.criadoPorNome || "";
 
   if (p === "gestao") {
-    if (!(usuario.lideresVinculados || []).includes(criador)) return [];
+    const isPropria  = criador === usuario.nome;
+    const isLiderado = (usuario.lideresVinculados || []).includes(criador);
+    if (!isPropria && !isLiderado) return [];
+
     if (s === "Aguardando análise do gestor") return [
-      { label: "Aprovar", novoStatus: "Aprovada pelo gestor", reqObs: true },
-      { label: "Reprovar", novoStatus: "Reprovada pelo gestor", reqObs: true },
-      { label: "Devolver para ajuste", novoStatus: "Devolvida para ajuste", reqObs: true }
+      { label: "Aprovar",              novoStatus: "Aprovada pelo gestor",  reqObs: true  },
+      { label: "Reprovar",             novoStatus: "Reprovada pelo gestor", reqObs: true  },
+      { label: "Devolver para ajuste", novoStatus: "Devolvida para ajuste", reqObs: true  }
     ];
     if (s === "Aprovada pelo gestor") return [];
-    if (s === "Devolvida para ajuste") return [
+    if (s === "Devolvida para ajuste" && isPropria) return [
       { label: "Reenviar ao gestor", novoStatus: "Aguardando análise do gestor", reqObs: false }
     ];
     return [];
@@ -913,10 +923,10 @@ function confirmarExcluir() {
 }
 
 function podeEditarLider(item) {
-  if (usuarioAtual.perfil !== "lider") return false;
   const criador = item.criadoPor || item.criadoPorNome || "";
-  if (criador !== usuarioAtual.nome) return false;
-  return item.status === "Devolvida para ajuste";
+  const ehCriador = criador === usuarioAtual.nome;
+  const perfilPermitido = usuarioAtual.perfil === "lider" || usuarioAtual.perfil === "gestao";
+  return perfilPermitido && ehCriador && item.status === "Devolvida para ajuste";
 }
 
 // ── Modal de Decisão ──────────────────────────────────────────────────────
@@ -1159,7 +1169,33 @@ function det(label, valor, extra) {
 }
 
 // ── Listagem ──────────────────────────────────────────────────────────────
+function renderFiltroOrigem() {
+  const wrap = document.getElementById("filtroOrigemWrap");
+  if (!wrap) return;
+  if (usuarioAtual.perfil !== "gestao") {
+    wrap.classList.add("hidden");
+    return;
+  }
+  wrap.classList.remove("hidden");
+  const opts = [
+    { valor: "",         label: "Todas"                    },
+    { valor: "propria",  label: "Minhas Solicitações"      },
+    { valor: "liderados",label: "Solicitações dos Liderados"}
+  ];
+  wrap.innerHTML = opts.map(o => `
+    <button class="filtro-origem-pill${filtroOrigem === o.valor ? " active" : ""}"
+      data-origem="${o.valor}">${o.label}</button>`).join("");
+  wrap.querySelectorAll(".filtro-origem-pill").forEach(btn => {
+    btn.addEventListener("click", () => {
+      filtroOrigem = btn.dataset.origem;
+      paginaAtual = 1;
+      renderListagem();
+    });
+  });
+}
+
 function renderListagem() {
+  renderFiltroOrigem();
   populateFiltros();
   const lista = listaFiltrada();
   const porPagina = Number(document.getElementById("perPage").value) || 20;
@@ -1264,7 +1300,16 @@ function listaFiltrada() {
     ].filter(Boolean).join(" ").toLowerCase();
     const dataItem = (item.dataCriacao || "").slice(0, 10);
 
-    return (!filtroStatus || item.status === filtroStatus)
+    // Filtro de origem para gestores
+    const origemOk = (() => {
+      if (filtroOrigem === "" || usuarioAtual.perfil !== "gestao") return true;
+      if (filtroOrigem === "propria")   return criador === usuarioAtual.nome;
+      if (filtroOrigem === "liderados") return (usuarioAtual.lideresVinculados || []).includes(criador);
+      return true;
+    })();
+
+    return origemOk
+      && (!filtroStatus || item.status === filtroStatus)
       && (!fTipo || item.tipo === fTipo)
       && (!fSol  || criador === fSol)
       && (!fGest || (item.gestorResponsavel || "") === fGest)
