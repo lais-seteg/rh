@@ -1,5 +1,7 @@
-# Credenciais — NUNCA versionar
-config.js
+# config.js contém a chave anon pública do Supabase.
+# Para sites estáticos (Vercel, GitHub Pages) ela PRECISA estar no repo.
+# A segurança é garantida pelas políticas RLS no banco, não pela chave.
+# config.js
 
 # Claude Code
 .claude/
