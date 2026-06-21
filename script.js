@@ -1775,14 +1775,14 @@ function renderOrganogramaUI() {
     : `<p style="color:var(--text-muted);padding:1rem">Nenhum gestor cadastrado.</p>`;
 
   el.innerHTML = `
-    <div class="organograma-header">
-      <div class="org-tabs">
-        <button class="org-tab${isGest ? ' active' : ''}" onclick="switchOrgTab('gestores')">Gestores e Líderes</button>
-        <button class="org-tab${!isGest ? ' active' : ''}" onclick="switchOrgTab('colaboradores')">Colaboradores da Seteg</button>
-      </div>
-      <button id="btnNovoGestor" class="btn btn-primary"${isGest ? '' : ' style="display:none"'} onclick="abrirModalNovoGestor()">+ Novo Gestor</button>
+    <div class="org-tabs">
+      <button class="org-tab${isGest ? ' active' : ''}" onclick="switchOrgTab('gestores')">Gestores e Líderes</button>
+      <button class="org-tab${!isGest ? ' active' : ''}" onclick="switchOrgTab('colaboradores')">Colaboradores da Seteg</button>
     </div>
     <div class="org-tab-content" id="orgTabGestores"${isGest ? '' : ' style="display:none"'}>
+      <div class="org-admin-header">
+        <button class="btn btn-primary" onclick="abrirModalNovoGestor()">+ Novo Gestor</button>
+      </div>
       ${gestoresHTML}
     </div>
     <div class="org-tab-content" id="orgTabColaboradores"${!isGest ? '' : ' style="display:none"'}>
@@ -1796,13 +1796,11 @@ function switchOrgTab(tab) {
   const isGest = tab === 'gestores';
   const tGest  = document.getElementById("orgTabGestores");
   const tColab = document.getElementById("orgTabColaboradores");
-  const btnNovo = document.getElementById("btnNovoGestor");
   document.querySelectorAll('.org-tab').forEach((btn, i) => {
     btn.classList.toggle('active', isGest ? i === 0 : i === 1);
   });
   if (tGest)  tGest.style.display  = isGest ? '' : 'none';
   if (tColab) tColab.style.display = isGest ? 'none' : '';
-  if (btnNovo) btnNovo.style.display = isGest ? '' : 'none';
 }
 
 // [ALTERADO] Gera HTML da tabela de colaboradores com filtros

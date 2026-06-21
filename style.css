@@ -1638,25 +1638,13 @@ body.dash-active #viewDashboard.active { flex: 1; }
   font-size: .85rem;
 }
 
-/* ── Organograma: Header com abas + botão na mesma linha ───────────── */
-.organograma-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 1.25rem;
-}
-.organograma-header > .btn {
-  margin-bottom: .75rem;
-}
-
 /* ── Organograma: Abas (RH / Direção) [ALTERADO] ───────────────────── */
 .org-tabs {
   display: flex;
   gap: .4rem;
+  margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: .4rem;
-  flex: 1;
 }
 .org-tab {
   padding: .5rem 1.1rem;
