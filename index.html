@@ -57,9 +57,6 @@
       <button class="nav-item active" data-view="dashboard">
         <span class="nav-icon">⊞</span><span>Dashboard</span>
       </button>
-      <button class="nav-item" data-view="novaSolicitacao">
-        <span class="nav-icon">⊕</span><span>Nova Solicitação</span>
-      </button>
       <button class="nav-item" data-view="solicitacoes">
         <span class="nav-icon">≡</span><span>Solicitações</span>
       </button>
@@ -88,6 +85,11 @@
       <h2 id="topBarTitle">Dashboard</h2>
       <div class="top-bar-right">
         <span id="topBoasVindas" class="top-bar-welcome"></span>
+        <button class="theme-toggle" id="themeToggle" title="Alternar tema claro/escuro">
+          <div class="theme-toggle-slider" id="themeSlider">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </div>
+        </button>
         <span class="perfil-badge" id="topPerfil">Gestão</span>
       </div>
     </header>
@@ -97,27 +99,6 @@
       <!-- VIEW: Dashboard -->
       <section id="viewDashboard" class="view active">
         <div id="dashContent"></div>
-      </section>
-
-      <!-- VIEW: Tipo de Solicitação -->
-      <section id="viewNovaSolicitacao" class="view">
-        <div class="tipo-selector">
-          <p class="tipo-selector-label">Selecione o tipo de requisição para continuar</p>
-          <div class="tipo-cards">
-            <button class="tipo-card" data-tipo="selecao">
-              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">👤</span>
-              <strong>REQUISIÇÃO DE PESSOAL POR SELEÇÃO EXTERNA</strong>
-            </button>
-            <button class="tipo-card" data-tipo="indicacao">
-              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">🤝</span>
-              <strong>REQUISIÇÃO DE PESSOAL POR INDICAÇÃO</strong>
-            </button>
-            <button class="tipo-card" data-tipo="mudancaCargo">
-              <span class="tipo-icon" style="font-size:7rem;line-height:1;display:block">🔄</span>
-              <strong>SOLICITAÇÃO DE MUDANÇA DE CARGO</strong>
-            </button>
-          </div>
-        </div>
       </section>
 
       <!-- VIEW: Formulário -->
@@ -140,94 +121,123 @@
 
       <!-- VIEW: Solicitações -->
       <section id="viewSolicitacoes" class="view">
-        <div class="list-wrap">
-          <!-- Filtro de origem — visível apenas para gestores -->
-          <div id="filtroOrigemWrap" class="filtro-origem-wrap hidden"></div>
+        <div class="sol-page-wrap">
 
-          <div class="list-header">
-            <div class="filter-pills" id="filterPills">
-              <button class="filter-pill active" data-status="">Todas</button>
-              <button class="filter-pill" data-status="Aguardando análise do gestor">Aguard. Gestor</button>
-              <button class="filter-pill" data-status="Aprovada pelo gestor">Aprov. Gestor</button>
-              <button class="filter-pill" data-status="Reprovada pelo gestor">Reprov. Gestor</button>
-              <button class="filter-pill" data-status="Encaminhada ao RH">Enc. ao RH</button>
-              <button class="filter-pill" data-status="Em análise pelo RH">Análise RH</button>
-              <button class="filter-pill" data-status="Aprovada pelo RH">Aprov. RH</button>
-              <button class="filter-pill" data-status="Reprovada pelo RH">Reprov. RH</button>
-              <button class="filter-pill" data-status="Aprovada pela Direção">Aprov. Direção</button>
-              <button class="filter-pill" data-status="Reprovada pela Direção">Reprov. Direção</button>
-              <button class="filter-pill" data-status="Devolvida para ajuste">Devolvida</button>
-              <button class="filter-pill" data-status="Finalizada">Finalizada</button>
+          <!-- Bloco 1: Nova Solicitação -->
+          <div class="sol-block nova-block">
+            <div class="sol-block-header">
+              <span class="sol-block-title">Nova Solicitação</span>
+              <span class="sol-block-sub">Selecione o tipo de requisição para criar</span>
             </div>
-            <input id="buscaLista" class="form-control search-input" placeholder="Buscar cargo, projeto, solicitante..." />
+            <div class="tipo-cards-compact">
+              <button class="tipo-card-compact" onclick="abrirFormPorTipo('selecao')">
+                <span class="tipo-icon-sm">👤</span>
+                <div class="tipo-card-compact-text">
+                  <strong>Seleção Externa</strong>
+                  <span>Requisição de pessoal para nova vaga</span>
+                </div>
+                <svg class="tipo-card-compact-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="tipo-card-compact" onclick="abrirFormPorTipo('mudancaCargo')">
+                <span class="tipo-icon-sm">🔄</span>
+                <div class="tipo-card-compact-text">
+                  <strong>Mudança de Cargo</strong>
+                  <span>Promoção, readequação ou transferência</span>
+                </div>
+                <svg class="tipo-card-compact-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
 
-          <!-- Filtros avançados -->
-          <div class="list-filters">
-            <div class="filtro-item">
-              <select id="filtroTipoSol" class="form-control filter-sel">
-                <option value="">Tipo</option>
-                <option value="selecao">Seleção</option>
-                <option value="indicacao">Indicação</option>
-                <option value="mudancaCargo">Mudança de Cargo</option>
-              </select>
+          <!-- Bloco 2: Todas as Solicitações -->
+          <div class="sol-block list-block">
+            <div class="sol-block-header">
+              <span class="sol-block-title">Solicitações</span>
             </div>
-            <div class="filtro-item">
-              <select id="filtroSolicitante" class="form-control filter-sel"><option value="">Solicitante</option></select>
-            </div>
-            <div class="filtro-item">
-              <select id="filtroGestorResp" class="form-control filter-sel"><option value="">Gestor</option></select>
-            </div>
-            <div class="filtro-item">
-              <select id="filtroSetorSol" class="form-control filter-sel"><option value="">Setor</option></select>
-            </div>
-            <div class="filtro-item">
-              <input id="filtroDataCriacao" type="date" class="form-control filter-sel" title="Data de criação" />
-            </div>
-            <button id="btnLimparFiltros" class="btn btn-ghost" style="height:32px;padding:.2rem .7rem;font-size:.73rem;flex-shrink:0">Limpar</button>
-          </div>
 
-          <div class="table-wrapper">
-            <div class="table-scroll">
-              <table class="art-table">
-                <thead>
-                  <tr>
-                    <th>Nº</th>
-                    <th>Tipo</th>
-                    <th>Solicitante</th>
-                    <th>Cargo / Vaga</th>
-                    <th>Projeto / Depto</th>
-                    <th>Status</th>
-                    <th>Criado em</th>
-                    <th>Atualizado</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="tabelaBody"></tbody>
-              </table>
-              <div id="emptyState" class="table-empty">
-                <div class="empty-state">
-                  <div class="empty-icon">📋</div>
-                  <strong>Nenhuma solicitação encontrada</strong>
-                  <span>Crie uma nova solicitação para começar.</span>
+            <!-- Filtro de origem — visível apenas para gestores -->
+            <div id="filtroOrigemWrap" class="filtro-origem-wrap hidden"></div>
+
+            <div class="list-header">
+              <div class="filter-pills" id="filterPills">
+                <button class="filter-pill active" data-status="">Todas</button>
+                <button class="filter-pill" data-status="Aguardando análise do gestor">Aguard. Gestor</button>
+                <button class="filter-pill" data-status="Reprovada pelo gestor">Reprovada</button>
+                <button class="filter-pill" data-status="Encaminhada ao RH">Enc. ao RH</button>
+                <button class="filter-pill" data-status="Em análise pelo RH">Análise RH</button>
+                <button class="filter-pill" data-status="Seleção em andamento">Em Seleção</button>
+                <button class="filter-pill" data-status="Finalizada">Finalizada</button>
+              </div>
+              <input id="buscaLista" class="form-control search-input" placeholder="Buscar cargo, projeto, solicitante..." />
+            </div>
+
+            <!-- Filtros avançados -->
+            <div class="list-filters">
+              <div class="filtro-item">
+                <select id="filtroTipoSol" class="form-control filter-sel">
+                  <option value="">Tipo</option>
+                  <option value="selecao">Seleção</option>
+                  <option value="mudancaCargo">Mudança de Cargo</option>
+                </select>
+              </div>
+              <div class="filtro-item">
+                <select id="filtroSolicitante" class="form-control filter-sel"><option value="">Solicitante</option></select>
+              </div>
+              <div class="filtro-item">
+                <select id="filtroGestorResp" class="form-control filter-sel"><option value="">Gestor</option></select>
+              </div>
+              <div class="filtro-item">
+                <select id="filtroSetorSol" class="form-control filter-sel"><option value="">Setor</option></select>
+              </div>
+              <div class="filtro-item">
+                <input id="filtroDataCriacao" type="date" class="form-control filter-sel" title="Data de criação" />
+              </div>
+              <button id="btnLimparFiltros" class="btn btn-ghost" style="height:32px;padding:.2rem .7rem;font-size:.73rem;flex-shrink:0">Limpar</button>
+            </div>
+
+            <div class="table-wrapper">
+              <div class="table-scroll">
+                <table class="art-table">
+                  <thead>
+                    <tr>
+                      <th>Nº</th>
+                      <th>Tipo</th>
+                      <th>Solicitante</th>
+                      <th>Cargo / Vaga</th>
+                      <th>Projeto / Depto</th>
+                      <th>Status</th>
+                      <th>Criado em</th>
+                      <th>Atualizado</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabelaBody"></tbody>
+                </table>
+                <div id="emptyState" class="table-empty">
+                  <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <strong>Nenhuma solicitação encontrada</strong>
+                    <span>Crie uma nova solicitação para começar.</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="pagination-container">
-            <div id="paginationInfo" class="pagination-info">0 registros</div>
-            <div class="pagination-controls">
-              <button id="prevPage" class="btn-pagination">‹</button>
-              <span id="pageNumber" class="page-number">1</span>
-              <button id="nextPage" class="btn-pagination">›</button>
+            <div class="pagination-container">
+              <div id="paginationInfo" class="pagination-info">0 registros</div>
+              <div class="pagination-controls">
+                <button id="prevPage" class="btn-pagination">‹</button>
+                <span id="pageNumber" class="page-number">1</span>
+                <button id="nextPage" class="btn-pagination">›</button>
+              </div>
+              <div class="pagination-per-page">
+                <span>Por página:</span>
+                <select id="perPage"><option>10</option><option selected>20</option><option>50</option></select>
+              </div>
             </div>
-            <div class="pagination-per-page">
-              <span>Por página:</span>
-              <select id="perPage"><option>10</option><option selected>20</option><option>50</option></select>
-            </div>
-          </div>
-        </div>
+          </div><!-- /list-block -->
+
+        </div><!-- /sol-page-wrap -->
       </section>
 
       <!-- VIEW: Organograma -->
@@ -240,6 +250,10 @@
       </section>
 
     </main>
+
+    <footer class="app-footer">
+      Versão: V1.0.0 &nbsp;•&nbsp; © Desenvolvido por Seteg Soluções Ambientais Ltda &nbsp;•&nbsp; 2026
+    </footer>
   </div>
 </div>
 
@@ -283,6 +297,70 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modalDecisao')">Cancelar</button>
       <button id="btnConfirmarDecisao" class="btn btn-primary" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Rejeição Gestor -->
+<div id="modalRejeitar" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Justificativa de Reprovação</h2>
+      <button class="modal-close" onclick="fecharModal('modalRejeitar')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rejeitarId" />
+      <label class="form-label required">Informe o motivo da reprovação</label>
+      <textarea id="rejeitarObs" class="form-control" rows="4" placeholder="Descreva o motivo da reprovação..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalRejeitar')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarRejeitar()">Reprovar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ação RH -->
+<div id="modalRhAcao" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2 id="rhAcaoTitulo">Registrar Ação</h2>
+      <button class="modal-close" onclick="fecharModal('modalRhAcao')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rhAcaoId" />
+      <input type="hidden" id="rhAcaoStatus" />
+      <div class="form-group" style="margin-bottom:1rem">
+        <label class="form-label">Observações (opcional)</label>
+        <textarea id="rhAcaoObs" class="form-control" rows="3" placeholder="Registre observações sobre esta etapa..."></textarea>
+      </div>
+      <div id="rhAcaoContratadoWrap" style="display:none">
+        <label class="form-label">Pessoa contratada para a vaga</label>
+        <input id="rhAcaoContratado" class="form-control" placeholder="Nome completo do(a) contratado(a)..." />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalRhAcao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarRhAcao()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Observação (RH / Direção) -->
+<div id="modalObs" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Registrar Observação</h2>
+      <button class="modal-close" onclick="fecharModal('modalObs')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="obsId" />
+      <label class="form-label required">Observação</label>
+      <textarea id="obsTexto" class="form-control" rows="5" placeholder="Registre uma observação sobre esta solicitação..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalObs')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarObs()">Salvar</button>
     </div>
   </div>
 </div>
@@ -478,6 +556,88 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modalExcluirLider')">Cancelar</button>
       <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirLider()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Colaborador [ALTERADO] -->
+<div id="modalNovoColab" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Novo Colaborador</h2>
+      <button class="modal-close" onclick="fecharModal('modalNovoColab')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="req">*</span></label>
+        <input id="colabNome" class="form-control" type="text" placeholder="Nome completo" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cargo <span class="req">*</span></label>
+        <input id="colabCargo" class="form-control" type="text" placeholder="Ex: Analista Ambiental" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Setor <span class="req">*</span></label>
+        <input id="colabSetor" class="form-control" type="text" placeholder="Ex: Projetos" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Líder Direto</label>
+        <input id="colabLider" class="form-control" type="text" placeholder="Nome do líder direto (opcional)" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalNovoColab')">Cancelar</button>
+      <button id="btnSalvarNovoColab" class="btn btn-primary" onclick="salvarNovoColab()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Colaborador [ALTERADO] -->
+<div id="modalEditarColab" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Editar Colaborador</h2>
+      <button class="modal-close" onclick="fecharModal('modalEditarColab')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome <span class="req">*</span></label>
+        <input id="editColabNome" class="form-control" type="text" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cargo <span class="req">*</span></label>
+        <input id="editColabCargo" class="form-control" type="text" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Setor <span class="req">*</span></label>
+        <input id="editColabSetor" class="form-control" type="text" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Líder Direto</label>
+        <input id="editColabLider" class="form-control" type="text" placeholder="Nome do líder direto (opcional)" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalEditarColab')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditarColab()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Excluir Colaborador [ALTERADO] -->
+<div id="modalExcluirColab" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar Exclusão</h2>
+      <button class="modal-close" onclick="fecharModal('modalExcluirColab')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-primary);margin-bottom:.5rem">Deseja realmente excluir <strong id="excluirColabNome"></strong>?</p>
+      <p style="font-size:.82rem;color:var(--text-muted)">Esta ação não poderá ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalExcluirColab')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirColab()">Excluir</button>
     </div>
   </div>
 </div>

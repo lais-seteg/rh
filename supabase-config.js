@@ -141,6 +141,29 @@ async function sbExcluirLider(id) {
   return _sbPatch('/lideres?id=eq.' + encodeURIComponent(id), { ativo: false });
 }
 
+// ── Colaboradores — funções de leitura ──────────────────────── [ALTERADO]
+async function sbCarregarColaboradores() {
+  try {
+    return await _sbGet('/colaboradores?ativo=eq.true&select=id,nome,cargo,setor,lider_direto&order=nome.asc');
+  } catch(e) {
+    console.error('[db] sbCarregarColaboradores:', e);
+    return [];
+  }
+}
+
+// ── Colaboradores — funções de escrita ──────────────────────── [ALTERADO]
+async function sbCriarColaborador(nome, cargo, setor, liderDireto) {
+  return _sbPost('/colaboradores', { nome, cargo, setor, lider_direto: liderDireto || null, ativo: true });
+}
+
+async function sbEditarColaborador(id, nome, cargo, setor, liderDireto) {
+  return _sbPatch('/colaboradores?id=eq.' + encodeURIComponent(id), { nome, cargo, setor, lider_direto: liderDireto || null });
+}
+
+async function sbExcluirColaborador(id) {
+  return _sbPatch('/colaboradores?id=eq.' + encodeURIComponent(id), { ativo: false });
+}
+
 /*
   ═══════════════════════════════════════════════════════════════
   SQL PARA CRIAÇÃO DAS TABELAS NO SUPABASE
@@ -166,9 +189,21 @@ async function sbExcluirLider(id) {
     created_at TIMESTAMPTZ DEFAULT now()
   );
 
+  -- Tabela de colaboradores (RH e Direção) [ALTERADO]
+  CREATE TABLE IF NOT EXISTS colaboradores (
+    id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    nome         TEXT NOT NULL,
+    cargo        TEXT NOT NULL,
+    setor        TEXT NOT NULL,
+    lider_direto TEXT,
+    ativo        BOOLEAN DEFAULT true,
+    created_at   TIMESTAMPTZ DEFAULT now()
+  );
+
   -- Políticas RLS (permitir acesso anônimo via chave anon)
-  ALTER TABLE gestores ENABLE ROW LEVEL SECURITY;
-  ALTER TABLE lideres  ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE gestores      ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE lideres        ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE colaboradores  ENABLE ROW LEVEL SECURITY;
 
   CREATE POLICY "anon_select_gestores" ON gestores FOR SELECT TO anon USING (true);
   CREATE POLICY "anon_insert_gestores" ON gestores FOR INSERT TO anon WITH CHECK (true);
@@ -177,6 +212,10 @@ async function sbExcluirLider(id) {
   CREATE POLICY "anon_select_lideres"  ON lideres  FOR SELECT TO anon USING (true);
   CREATE POLICY "anon_insert_lideres"  ON lideres  FOR INSERT TO anon WITH CHECK (true);
   CREATE POLICY "anon_update_lideres"  ON lideres  FOR UPDATE TO anon USING (true);
+
+  CREATE POLICY "anon_select_colab"    ON colaboradores FOR SELECT TO anon USING (true);
+  CREATE POLICY "anon_insert_colab"    ON colaboradores FOR INSERT TO anon WITH CHECK (true);
+  CREATE POLICY "anon_update_colab"    ON colaboradores FOR UPDATE TO anon USING (true);
 
   -- Dados iniciais (execute após criar as tabelas)
   INSERT INTO gestores (nome, setor) VALUES
