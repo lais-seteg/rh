@@ -555,15 +555,15 @@ textarea.form-control{resize:vertical}
 [data-theme="light"] .nova-sol-option{color:var(--text-primary)}
 [data-theme="light"] .nova-sol-option:hover{background:var(--bg-card-hover)}
 [data-theme="light"] .nova-sol-opt-label{color:var(--text-primary)}
-.list-header{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;
+.list-header{display:flex;align-items:center;gap:.6rem;
   padding:.75rem 1rem;border-bottom:1px solid var(--border-color);background:var(--bg-secondary)}
-.filter-pills{display:flex;gap:.25rem;flex-wrap:wrap;flex:1}
+.filter-pills{display:flex;gap:.25rem;flex-wrap:wrap;align-items:center;flex:1}
 .filter-pill{padding:.22rem .55rem;border:1px solid var(--border-color);border-radius:20px;
   background:transparent;color:var(--text-secondary);font-family:var(--font);font-size:.68rem;
   font-weight:500;cursor:pointer;transition:var(--transition)}
 .filter-pill:hover{background:var(--bg-card-hover);color:#fff}
 .filter-pill.active{background:var(--blue);border-color:var(--blue);color:#fff}
-.search-input{min-width:240px;padding:.35rem .65rem;font-size:.78rem}
+.search-input{width:160px;min-width:120px;padding:.22rem .55rem;font-size:.68rem;height:auto;border-radius:20px;margin-left:.25rem}
 
 /* ── Filtro de origem (gestores) ────────────────────────────────────────── */
 .filtro-origem-wrap {
@@ -1641,11 +1641,14 @@ body.dash-active #viewDashboard.active { flex: 1; }
 /* ── Organograma: Abas (RH / Direção) [ALTERADO] ───────────────────── */
 .org-tabs {
   display: flex;
+  align-items: center;
   gap: .4rem;
   margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: .4rem;
 }
+.org-tabs-spacer { flex: 1; }
+.org-tabs-action { margin-left: .5rem; }
 .org-tab {
   padding: .5rem 1.1rem;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
@@ -1790,7 +1793,7 @@ body.dash-active #viewDashboard.active { flex: 1; }
   .form-grid{grid-template-columns:1fr}
   .checkbox-group{grid-template-columns:1fr}
   .list-header{flex-direction:column}
-  .search-input{min-width:100%;width:100%}
+  .search-input{width:100%;border-radius:var(--radius-sm)}
   .form-rh-body{padding:1rem}
   .form-rh-header,.form-rh-footer{padding:.75rem 1rem}
   .dashboard-kpis{grid-template-columns:repeat(3,1fr)}

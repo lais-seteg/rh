@@ -167,8 +167,8 @@
                 <button class="filter-pill" data-status="Em análise pelo RH">Análise RH</button>
                 <button class="filter-pill" data-status="Seleção em andamento">Em Seleção</button>
                 <button class="filter-pill" data-status="Finalizada">Finalizada</button>
+                <input id="buscaLista" class="form-control search-input" placeholder="🔍 Buscar..." />
               </div>
-              <input id="buscaLista" class="form-control search-input" placeholder="Buscar cargo, projeto, solicitante..." />
             </div>
 
             <!-- Filtros avançados -->
@@ -638,6 +638,80 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fecharModal('modalExcluirColab')">Cancelar</button>
       <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirColab()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nova Entrada Salarial -->
+<div id="modalNovaSalarial" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Nova Entrada Salarial</h2>
+      <button class="modal-close" onclick="fecharModal('modalNovaSalarial')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Cargo</label>
+        <select id="tsCargo" class="form-control"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Setor</label>
+        <input id="tsSetor" class="form-control" placeholder="Ex: Projetos, Inovação..." autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Salário</label>
+        <input id="tsSalario" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalNovaSalarial')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarNovaSalarial()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Entrada Salarial -->
+<div id="modalEditarSalarial" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Editar Entrada Salarial</h2>
+      <button class="modal-close" onclick="fecharModal('modalEditarSalarial')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Cargo</label>
+        <select id="tsEditCargo" class="form-control"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label required">Setor</label>
+        <input id="tsEditSetor" class="form-control" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Salário</label>
+        <input id="tsEditSalario" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalEditarSalarial')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditarSalarial()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Excluir Entrada Salarial -->
+<div id="modalExcluirSalarial" class="modal-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h2>Confirmar Exclusão</h2>
+      <button class="modal-close" onclick="fecharModal('modalExcluirSalarial')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-primary);margin-bottom:.5rem">Deseja realmente excluir a entrada de <strong id="excluirSalarialNome"></strong>?</p>
+      <p class="modal-hint">Esta ação não pode ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modalExcluirSalarial')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--red)" onclick="confirmarExcluirSalarial()">Excluir</button>
     </div>
   </div>
 </div>

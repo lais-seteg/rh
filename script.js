@@ -4,6 +4,7 @@ const STORAGE_KEY = "portalRH_v3";
 const CLOCKIFY_API_KEY = 'ODUwOThjOTUtYmJlNS00Nzg5LWI3NmYtYzRjYjZlZGE3NDIw';
 const CLOCKIFY_BASE_URL = 'https://api.clockify.me/api/v1';
 let projetosClockify = [];
+let _tabelaSalarial = [];
 const SESSION_KEY = "portalRH_sessao";
 
 // Estrutura local dos usuários — usada apenas para Organograma e Configurações.
@@ -411,10 +412,10 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
   const sel = (field, opts, val) =>
     `<select id="${field}" class="form-control"><option value="">Selecione</option>${opts.map(o=>`<option ${val===o?"selected":""}>${o}</option>`).join("")}</select>`;
 
-  const localVal  = (d.localTrabalho || "").toUpperCase();
-  const isExterno = localVal.includes("EXTERNO");
-  const isSede    = localVal.includes("SEDE");
-  const isOutro   = !!d.outroProjeto;
+  const localVal       = (d.localTrabalho || "").toUpperCase();
+  const isExterno      = localVal.includes("EXTERNO");
+  const isSede         = localVal.includes("SEDE");
+  const canSeeSalario  = ["rh","direcao"].includes(usuarioAtual?.perfil);
 
   return `
   <!-- [ALTERADO] Seção 1 — adicionados campos: Setor e Salário -->
@@ -440,10 +441,11 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
         <label class="form-label required">Tipo de contrato</label>
         ${sel("f_tipoContrato",["CLT","PJ","Estágio","Horista"],d.tipoContrato)}
       </div>
+      ${canSeeSalario ? `
       <div class="form-group">
         <label class="form-label required">Salário</label>
         <input id="f_salario" class="form-control mask-real" placeholder="R$ 0,00" value="${esc(d.salario)}" />
-      </div>
+      </div>` : `<input type="hidden" id="f_salario" value="${esc(d.salario)}" />`}
       <div class="form-group">
         <label class="form-label required">Local de trabalho</label>
         ${sel("f_localTrabalho",["Sede","Externo / Campo"],d.localTrabalho)}
@@ -457,22 +459,11 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label required">Projeto (Clockify)</label>
+        <label class="form-label">Projeto (Clockify)</label>
         <div class="clockify-input-wrapper">
-          <input id="f_nomeProjetoClockify" class="form-control" placeholder="${isOutro?"Nome do projeto (manual)":"Buscar projeto..."}" value="${esc(d.nomeProjetoClockify)}" autocomplete="off" />
+          <input id="f_nomeProjetoClockify" class="form-control" placeholder="Buscar projeto..." value="${esc(d.nomeProjetoClockify)}" autocomplete="off" />
           <div class="clockify-suggestions" id="clockifySuggestionsRH"></div>
         </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Código do Projeto</label>
-        <input id="f_codigoClockify" class="form-control" placeholder="${isOutro?"Código do projeto (manual)":"Preenchido automaticamente"}" value="${esc(d.codigoClockify)}" ${isOutro?"":"readonly"} />
-      </div>
-      <!-- [ALTERADO] Opção Outro Projeto — habilitada quando projeto não constar no Clockify -->
-      <div class="form-group full-width">
-        <label class="checkbox-item outro-projeto-check">
-          <input type="checkbox" id="f_outroProjeto" ${isOutro?"checked":""} />
-          <span class="checkbox-label">Outro Projeto — projeto não cadastrado no Clockify (preencher nome e código manualmente)</span>
-        </label>
       </div>
       <div class="form-group">
         <label class="form-label required">Número de vagas</label>
@@ -580,17 +571,36 @@ function htmlFormMudancaCargo(dados) {
     </div>
   </div>
 
-  <!-- [ALTERADO] Seção 2 com novos campos de destino -->
   <div class="form-section-block">
-    <h3 class="form-subtitle">2. Informações da Mudança Solicitada</h3>
+    <h3 class="form-subtitle">2. Dados do Solicitante / Responsável</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label required">Nome</label>
+        <input id="f_respNome" class="form-control" value="${esc(d.respNome)}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Cargo</label>
+        <input id="f_respCargo" class="form-control" value="${esc(d.respCargo)}" />
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section-block">
+    <h3 class="form-subtitle">3. Justificativa / Observações</h3>
+    <div class="form-grid">
+      <div class="form-group full-width">
+        <p class="form-hint">Se houver mudança de horários ou benefícios, informar neste campo.</p>
+        <textarea id="f_justificativa" class="form-control" rows="5" placeholder="Descreva a justificativa e observações importantes...">${esc(d.justificativa)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section-block">
+    <h3 class="form-subtitle">4. Informações da Mudança Solicitada</h3>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label required">Setor de Destino</label>
         <input id="f_setorDestino" class="form-control" placeholder="Ex: Projetos, Inovação..." value="${esc(d.setorDestino)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Departamento de Destino</label>
-        <input id="f_departamentoDestino" class="form-control" placeholder="Ex: Licenciamento, Administrativo..." value="${esc(d.departamentoDestino)}" />
       </div>
       <div class="form-group">
         <label class="form-label required">Novo Líder Imediato</label>
@@ -603,31 +613,6 @@ function htmlFormMudancaCargo(dados) {
       <div class="form-group">
         <label class="form-label required">Data Prevista para a Mudança</label>
         <input id="f_dataPrevista" class="form-control" type="date" value="${esc(d.dataPrevista)}" />
-      </div>
-    </div>
-  </div>
-
-  <!-- [ALTERADO] Texto de orientação atualizado conforme especificação -->
-  <div class="form-section-block">
-    <h3 class="form-subtitle">3. Justificativa / Observações</h3>
-    <div class="form-grid">
-      <div class="form-group full-width">
-        <p class="form-hint">Se houver mudança de horários ou benefícios, informar neste campo.</p>
-        <textarea id="f_justificativa" class="form-control" rows="5" placeholder="Descreva a justificativa e observações importantes...">${esc(d.justificativa)}</textarea>
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section-block">
-    <h3 class="form-subtitle">4. Dados do Solicitante / Responsável</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Nome</label>
-        <input id="f_respNome" class="form-control" value="${esc(d.respNome)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Cargo</label>
-        <input id="f_respCargo" class="form-control" value="${esc(d.respCargo)}" />
       </div>
     </div>
   </div>`;
@@ -674,6 +659,21 @@ function afterFormRender() {
   if (lt) {
     lt.addEventListener("change", toggleLocalTrabalho);
     if (lt.value) toggleLocalTrabalho(); // aplica estado inicial ao editar
+  }
+
+  // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo
+  const fCargoSel = document.getElementById('f_cargo');
+  if (fCargoSel) {
+    fCargoSel.addEventListener('change', function() {
+      const cargoSel = this.value.toUpperCase();
+      const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
+      if (entrada) {
+        const fSetor   = document.getElementById('f_setor');
+        const fSalario = document.getElementById('f_salario');
+        if (fSetor)   fSetor.value   = entrada.setor   || '';
+        if (fSalario) fSalario.value = entrada.salario || '';
+      }
+    });
   }
 
   // [ALTERADO] Outro Projeto — habilita/desabilita campos manuais
@@ -791,9 +791,7 @@ function coletarForm() {
       jornada:             isExterno ? uv("f_jornada") : "08:00 às 17:00",
       horasSemana:         isExterno ? v("f_horasSemana") : "",
       beneficios:          isExterno ? coletarBeneficios(true) : [],
-      outroProjeto:        document.getElementById("f_outroProjeto")?.checked || false, // [ALTERADO]
       nomeProjetoClockify: uv("f_nomeProjetoClockify"),
-      codigoClockify:      v("f_codigoClockify"),
       numVagas:            v("f_numVagas"),
       modalidade:          uv("f_modalidade"),
       dataInicio:          v("f_dataInicio"),
@@ -814,8 +812,7 @@ function coletarForm() {
       nomeColaborador:      uv("f_nomeColaborador"),
       cargoAtual:           uv("f_cargoAtual"),
       liderAtual:           uv("f_liderAtual"),
-      setorDestino:         uv("f_setorDestino"),         // [ALTERADO] novo
-      departamentoDestino:  uv("f_departamentoDestino"),  // [ALTERADO] novo
+      setorDestino:         uv("f_setorDestino"),
       novoLider:            uv("f_novoLider"),            // [ALTERADO] novo
       salario:              v("f_salario"),               // [ALTERADO] novo
       dataPrevista:         v("f_dataPrevista"),          // [ALTERADO] novo
@@ -845,15 +842,14 @@ function validarForm(dados) {
   if (tipoFormAtual === "selecao" || tipoFormAtual === "indicacao") {
     if (tipoFormAtual === "indicacao" && !dados.nomeIndicada) return "Informe o nome da pessoa indicada.";
     if (!dados.cargo)                 return "Selecione o cargo.";
-    if (!dados.setor)                 return "Informe o setor.";              // [ALTERADO]
+    if (!dados.setor)                 return "Informe o setor.";
     if (!dados.tipoContrato)          return "Informe o tipo de contrato.";
-    if (!dados.salario)               return "Informe o salário.";            // [ALTERADO]
+    if (["rh","direcao"].includes(usuarioAtual?.perfil) && !dados.salario) return "Informe o salário.";
     if (!dados.localTrabalho)         return "Informe o local de trabalho.";
-    // [ALTERADO] jornada e horas obrigatórios apenas para Externo
+    // jornada e horas obrigatórios apenas para Externo
     const isExterno = (dados.localTrabalho || "").toUpperCase().includes("EXTERNO");
     if (isExterno && !dados.jornada)     return "Informe a jornada / horário de trabalho.";
     if (isExterno && !dados.horasSemana) return "Informe a quantidade de horas semanais.";
-    if (!dados.nomeProjetoClockify)   return "Selecione ou informe o projeto.";
     if (!dados.numVagas)              return "Informe o número de vagas.";
     if (!dados.modalidade)            return "Informe a modalidade.";
     if (!dados.tipoRequisicao)        return "Informe o tipo de requisição.";
@@ -864,18 +860,20 @@ function validarForm(dados) {
     if (!dados.conhecimentos)         return "Informe os conhecimentos indispensáveis.";
     if (!dados.experiencia)           return "Informe a experiência desejada.";
   } else {
-    // [ALTERADO] validações de mudança de cargo com novos campos
+    // Seção 1 — colaborador
     if (!dados.nomeColaborador)      return "Informe o nome do colaborador.";
     if (!dados.cargoAtual)           return "Informe o cargo atual.";
     if (!dados.liderAtual)           return "Informe o líder imediato atual.";
-    if (!dados.setorDestino)         return "Informe o setor de destino.";         // [ALTERADO]
-    if (!dados.departamentoDestino)  return "Informe o departamento de destino.";  // [ALTERADO]
-    if (!dados.novoLider)            return "Informe o novo líder imediato.";      // [ALTERADO]
-    if (!dados.salario)              return "Informe o salário.";                  // [ALTERADO]
-    if (!dados.dataPrevista)         return "Informe a data prevista para a mudança."; // [ALTERADO]
-    if (!dados.justificativa)        return "Informe a justificativa / observações.";
+    // Seção 2 — solicitante
     if (!dados.respNome)             return "Informe o nome do responsável.";
     if (!dados.respCargo)            return "Informe o cargo do responsável.";
+    // Seção 3 — justificativa
+    if (!dados.justificativa)        return "Informe a justificativa / observações.";
+    // Seção 4 — mudança
+    if (!dados.setorDestino)         return "Informe o setor de destino.";
+    if (!dados.novoLider)            return "Informe o novo líder imediato.";
+    if (!dados.salario)              return "Informe o salário.";
+    if (!dados.dataPrevista)         return "Informe a data prevista para a mudança.";
   }
   return null;
 }
@@ -1350,7 +1348,7 @@ function gerarHTMLDetalhes(item) {
       ${det("Cargo", d.cargo)}
       ${det("Setor", d.setor)}
       ${det("Tipo de Contrato", d.tipoContrato)}
-      ${det("Salário", d.salario)}
+      ${["rh","direcao"].includes(usuarioAtual?.perfil) ? det("Salário", d.salario) : ""}
       ${det("Local de Trabalho", d.localTrabalho)}
       ${d.jornada ? det("Jornada / Horário", d.jornada) : ""}
       ${d.horasSemana ? det("Horas Semanais", d.horasSemana + "h") : ""}
@@ -1375,8 +1373,8 @@ function gerarHTMLDetalhes(item) {
       ${det("Nome", d.nomeColaborador, "full")}
       ${det("Cargo Atual", d.cargoAtual)} ${det("Líder Atual", d.liderAtual)}
       <div class="detail-section-title full"><span>Mudança Solicitada</span></div>
-      ${det("Setor de Destino", d.setorDestino)} ${det("Departamento de Destino", d.departamentoDestino)}
-      ${det("Novo Líder Imediato", d.novoLider)} ${det("Salário", d.salario)}
+      ${det("Setor de Destino", d.setorDestino)}
+      ${det("Novo Líder Imediato", d.novoLider)} ${["rh","direcao"].includes(usuarioAtual?.perfil) ? det("Salário", d.salario) : ""}
       ${d.dataPrevista ? det("Data Prevista", formatarData(d.dataPrevista)) : ""}
       ${det("Justificativa / Observações", d.justificativa, "full")}
       <div class="detail-section-title full"><span>Dados do Responsável</span></div>
@@ -1649,12 +1647,12 @@ async function renderOrganograma() {
   if (!el) return;
   el.innerHTML = `<div class="org-loading">Carregando organograma...</div>`;
 
-  // [ALTERADO] Carrega colaboradores junto para RH e Direção
   const canAdmin = ["rh", "direcao"].includes(usuarioAtual?.perfil);
-  const [gestores, lideres, colaboradores] = await Promise.all([
+  const [gestores, lideres, colaboradores, tabelaSalarial] = await Promise.all([
     sbCarregarGestores(),
     sbCarregarLideres(),
-    canAdmin ? sbCarregarColaboradores() : Promise.resolve([])
+    canAdmin ? sbCarregarColaboradores()    : Promise.resolve([]),
+    canAdmin ? sbCarregarTabelaSalarial()   : Promise.resolve([])
   ]);
 
   // Fallback para dados estáticos se as tabelas ainda não existirem
@@ -1670,7 +1668,10 @@ async function renderOrganograma() {
     _orgLideres  = lideres;
   }
 
-  if (canAdmin) _orgColaboradores = colaboradores;
+  if (canAdmin) {
+    _orgColaboradores = colaboradores;
+    _tabelaSalarial   = tabelaSalarial;
+  }
 
   renderOrganogramaUI();
 }
@@ -1768,8 +1769,10 @@ function renderOrganogramaUI() {
     return;
   }
 
-  // ── RH / DIREÇÃO: duas abas ───────────────────────────────────────────
-  const isGest = _orgTabAtiva !== 'colaboradores';
+  // ── RH / DIREÇÃO: três abas ───────────────────────────────────────────
+  const isGest  = _orgTabAtiva === 'gestores';
+  const isColab = _orgTabAtiva === 'colaboradores';
+  const isTs    = _orgTabAtiva === 'tabelaSalarial';
   const gestoresHTML = _orgGestores.length
     ? `<div class="acc-wrapper">${gerarAccordionsGestores(_orgGestores, true)}</div>`
     : `<p style="color:var(--text-muted);padding:1rem">Nenhum gestor cadastrado.</p>`;
@@ -1777,30 +1780,41 @@ function renderOrganogramaUI() {
   el.innerHTML = `
     <div class="org-tabs">
       <button class="org-tab${isGest ? ' active' : ''}" onclick="switchOrgTab('gestores')">Gestores e Líderes</button>
-      <button class="org-tab${!isGest ? ' active' : ''}" onclick="switchOrgTab('colaboradores')">Colaboradores da Seteg</button>
+      <button class="org-tab${isColab ? ' active' : ''}" onclick="switchOrgTab('colaboradores')">Colaboradores da Seteg</button>
+      <button class="org-tab${isTs ? ' active' : ''}" onclick="switchOrgTab('tabelaSalarial')">Tabela Salarial</button>
+      <div class="org-tabs-spacer"></div>
+      <button id="btnNovoGestor" class="btn btn-primary org-tabs-action" onclick="abrirModalNovoGestor()"${isGest ? '' : ' style="display:none"'}>+ Novo Gestor</button>
+      <button id="btnNovaSalarial" class="btn btn-primary org-tabs-action" onclick="abrirModalNovaSalarial()"${isTs ? '' : ' style="display:none"'}>+ Nova Entrada</button>
     </div>
     <div class="org-tab-content" id="orgTabGestores"${isGest ? '' : ' style="display:none"'}>
-      <div class="org-admin-header">
-        <button class="btn btn-primary" onclick="abrirModalNovoGestor()">+ Novo Gestor</button>
-      </div>
       ${gestoresHTML}
     </div>
-    <div class="org-tab-content" id="orgTabColaboradores"${!isGest ? '' : ' style="display:none"'}>
+    <div class="org-tab-content" id="orgTabColaboradores"${isColab ? '' : ' style="display:none"'}>
       ${gerarHTMLColaboradores()}
+    </div>
+    <div class="org-tab-content" id="orgTabTabelaSalarial"${isTs ? '' : ' style="display:none"'}>
+      ${gerarHTMLTabelaSalarial()}
     </div>`;
 }
 
-// [ALTERADO] Troca aba ativa do organograma (RH e Direção)
 function switchOrgTab(tab) {
   _orgTabAtiva = tab;
-  const isGest = tab === 'gestores';
+  const isGest  = tab === 'gestores';
+  const isColab = tab === 'colaboradores';
+  const isTs    = tab === 'tabelaSalarial';
   const tGest  = document.getElementById("orgTabGestores");
   const tColab = document.getElementById("orgTabColaboradores");
+  const tTs    = document.getElementById("orgTabTabelaSalarial");
   document.querySelectorAll('.org-tab').forEach((btn, i) => {
-    btn.classList.toggle('active', isGest ? i === 0 : i === 1);
+    btn.classList.toggle('active', (isGest && i === 0) || (isColab && i === 1) || (isTs && i === 2));
   });
-  if (tGest)  tGest.style.display  = isGest ? '' : 'none';
-  if (tColab) tColab.style.display = isGest ? 'none' : '';
+  if (tGest)  tGest.style.display  = isGest  ? '' : 'none';
+  if (tColab) tColab.style.display = isColab ? '' : 'none';
+  if (tTs)    tTs.style.display    = isTs    ? '' : 'none';
+  const btnNovoGestor   = document.getElementById("btnNovoGestor");
+  const btnNovaSalarial = document.getElementById("btnNovaSalarial");
+  if (btnNovoGestor)   btnNovoGestor.style.display   = isGest ? '' : 'none';
+  if (btnNovaSalarial) btnNovaSalarial.style.display  = isTs   ? '' : 'none';
 }
 
 // [ALTERADO] Gera HTML da tabela de colaboradores com filtros
@@ -1859,11 +1873,139 @@ function gerarHTMLColaboradores() {
     <p class="colab-count">${countMsg}</p>`;
 }
 
-// [ALTERADO] Atualiza filtro e re-renderiza só a tabela de colaboradores
 function filtrarColaboradores(campo, valor) {
   _orgColabFiltro[campo] = valor;
   const container = document.getElementById("orgTabColaboradores");
   if (container) container.innerHTML = gerarHTMLColaboradores();
+}
+
+// ── Tabela Salarial ───────────────────────────────────────────────────────
+
+function gerarHTMLTabelaSalarial() {
+  const rowsHTML = _tabelaSalarial.length
+    ? _tabelaSalarial.map(e => `
+        <tr>
+          <td>${esc(e.cargo)}</td>
+          <td>${esc(e.setor)}</td>
+          <td>${esc(e.salario)}</td>
+          <td class="colab-actions">
+            <button class="btn-org-leader btn-org-leader-edit" title="Editar"
+              onclick="abrirModalEditarSalarial('${esc(String(e.id))}')">✏</button>
+            <button class="btn-org-leader btn-org-leader-delete" title="Excluir"
+              onclick="abrirModalExcluirSalarial('${esc(String(e.id))}', '${esc(e.cargo)}')">✕</button>
+          </td>
+        </tr>`).join('')
+    : `<tr><td colspan="4" class="colab-empty">Nenhuma entrada cadastrada. Use o botão acima para adicionar.</td></tr>`;
+
+  return `
+    <div class="colab-table-wrap">
+      <table class="colab-table">
+        <thead>
+          <tr><th>Cargo</th><th>Setor</th><th>Salário</th><th>Ações</th></tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+    <p class="colab-count">${_tabelaSalarial.length} ${_tabelaSalarial.length === 1 ? 'entrada' : 'entradas'} cadastrada${_tabelaSalarial.length === 1 ? '' : 's'}</p>`;
+}
+
+let _tsEditId = null;
+let _tsDelId  = null;
+
+function _popularSelectCargo(selectId, valorAtual) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione o cargo</option>' +
+    CARGOS_RH.map(c => `<option value="${c}" ${valorAtual === c ? 'selected' : ''}>${c}</option>`).join('');
+}
+
+function abrirModalNovaSalarial() {
+  if (!["rh","direcao"].includes(usuarioAtual?.perfil)) return;
+  _popularSelectCargo("tsCargo", "");
+  document.getElementById("tsSetor").value   = "";
+  document.getElementById("tsSalario").value = "";
+  document.getElementById("modalNovaSalarial").classList.add("active");
+  document.getElementById("tsCargo").focus();
+}
+
+async function salvarNovaSalarial() {
+  const cargo   = document.getElementById("tsCargo").value.trim();
+  const setor   = document.getElementById("tsSetor").value.trim();
+  const salario = document.getElementById("tsSalario").value.trim();
+  if (!cargo)   { mostrarToast("Selecione o cargo."); return; }
+  if (!setor)   { mostrarToast("Informe o setor."); return; }
+  if (!salario) { mostrarToast("Informe o salário."); return; }
+  const btn = document.querySelector("#modalNovaSalarial .btn-primary");
+  if (btn) { btn.disabled = true; btn.textContent = "Salvando..."; }
+  try {
+    await sbCriarEntradaSalarial(cargo.toUpperCase(), setor, salario);
+    fecharModal("modalNovaSalarial");
+    mostrarToast("Entrada cadastrada com sucesso.");
+    _tabelaSalarial = await sbCarregarTabelaSalarial();
+    const container = document.getElementById("orgTabTabelaSalarial");
+    if (container) container.innerHTML = gerarHTMLTabelaSalarial();
+  } catch(e) {
+    mostrarToast("Erro ao salvar. Verifique a conexão.");
+    console.error("[ts] salvarNovaSalarial:", e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Salvar"; }
+  }
+}
+
+function abrirModalEditarSalarial(id) {
+  if (!["rh","direcao"].includes(usuarioAtual?.perfil)) return;
+  const e = _tabelaSalarial.find(x => String(x.id) === String(id));
+  if (!e) return;
+  _tsEditId = id;
+  _popularSelectCargo("tsEditCargo", e.cargo);
+  document.getElementById("tsEditSetor").value   = e.setor;
+  document.getElementById("tsEditSalario").value = e.salario;
+  document.getElementById("modalEditarSalarial").classList.add("active");
+}
+
+async function salvarEditarSalarial() {
+  if (!_tsEditId) return;
+  const cargo   = document.getElementById("tsEditCargo").value.trim();
+  const setor   = document.getElementById("tsEditSetor").value.trim();
+  const salario = document.getElementById("tsEditSalario").value.trim();
+  if (!cargo)   { mostrarToast("Selecione o cargo."); return; }
+  if (!setor)   { mostrarToast("Informe o setor."); return; }
+  if (!salario) { mostrarToast("Informe o salário."); return; }
+  try {
+    await sbEditarEntradaSalarial(_tsEditId, cargo.toUpperCase(), setor, salario);
+    fecharModal("modalEditarSalarial");
+    mostrarToast("Entrada atualizada.");
+    _tabelaSalarial = await sbCarregarTabelaSalarial();
+    const container = document.getElementById("orgTabTabelaSalarial");
+    if (container) container.innerHTML = gerarHTMLTabelaSalarial();
+  } catch(e) {
+    mostrarToast("Erro ao atualizar. Verifique a conexão.");
+    console.error("[ts] salvarEditarSalarial:", e);
+  }
+}
+
+function abrirModalExcluirSalarial(id, cargo) {
+  if (!["rh","direcao"].includes(usuarioAtual?.perfil)) return;
+  _tsDelId = id;
+  const el = document.getElementById("excluirSalarialNome");
+  if (el) el.textContent = cargo || "";
+  document.getElementById("modalExcluirSalarial").classList.add("active");
+}
+
+async function confirmarExcluirSalarial() {
+  if (!_tsDelId) return;
+  try {
+    await sbExcluirEntradaSalarial(_tsDelId);
+    _tsDelId = null;
+    fecharModal("modalExcluirSalarial");
+    mostrarToast("Entrada excluída.");
+    _tabelaSalarial = await sbCarregarTabelaSalarial();
+    const container = document.getElementById("orgTabTabelaSalarial");
+    if (container) container.innerHTML = gerarHTMLTabelaSalarial();
+  } catch(e) {
+    mostrarToast("Erro ao excluir. Verifique a conexão.");
+    console.error("[ts] confirmarExcluirSalarial:", e);
+  }
 }
 
 function toggleAcc(idx) {
@@ -2303,9 +2445,8 @@ function esconderSugestoesClockify() {
 
 function configurarClockifyAutocomplete() {
   const nomeField = document.getElementById('f_nomeProjetoClockify');
-  const codeField = document.getElementById('f_codigoClockify');
   const suggestionsBox = document.getElementById('clockifySuggestionsRH');
-  if (!nomeField || !codeField || !suggestionsBox) return;
+  if (!nomeField || !suggestionsBox) return;
 
   const buscarComDebounce = debounce((texto) => {
     if (!texto.trim() || texto.trim().length < 2) {
@@ -2321,7 +2462,6 @@ function configurarClockifyAutocomplete() {
   }, 400);
 
   nomeField.addEventListener('input', () => {
-    codeField.value = '';
     nomeField.dataset.clockifyId = '';
     mostrarSugestoesClockify([], 'loading');
     buscarComDebounce(nomeField.value);
@@ -2332,7 +2472,6 @@ function configurarClockifyAutocomplete() {
     if (!item) return;
     e.preventDefault();
     nomeField.value = item.dataset.nome;
-    codeField.value = item.dataset.code;
     nomeField.dataset.clockifyId = item.dataset.id;
     esconderSugestoesClockify();
   });
