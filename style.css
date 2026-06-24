@@ -347,7 +347,8 @@ body::before{content:'';position:fixed;inset:0;background:rgba(6,13,31,0.88);z-i
 .main-wrapper{flex:1;display:flex;flex-direction:column;min-width:0}
 .app-footer{flex-shrink:0;padding:.45rem 1.5rem;font-size:.65rem;color:var(--text-muted);
   border-top:1px solid var(--border-color);background:var(--bg-secondary);
-  text-align:center;letter-spacing:.01em;opacity:.75}
+  text-align:center;letter-spacing:.01em;opacity:.75;
+  position:sticky;bottom:0;z-index:8}
 [data-theme="light"] .app-footer{color:var(--text-muted);background:var(--bg-secondary);border-color:var(--border-color)}
 .top-bar{height:52px;min-height:52px;background:var(--bg-secondary);
   border-bottom:1px solid var(--border-color);display:flex;align-items:center;
@@ -358,7 +359,7 @@ body::before{content:'';position:fixed;inset:0;background:rgba(6,13,31,0.88);z-i
 .perfil-badge{padding:.3rem .75rem;background:rgba(108,194,74,.12);
   color:var(--green);border:1px solid rgba(108,194,74,.35);
   border-radius:20px;font-size:.72rem;font-weight:700}
-.main-content{flex:1;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+.main-content{flex:1;padding:1.25rem 1.5rem 2.5rem;display:flex;flex-direction:column;gap:1rem}
 
 /* ── Views ───────────────────────────────────────────────────────────── */
 .view{display:none;flex-direction:column;gap:1rem}

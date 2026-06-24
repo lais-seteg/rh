@@ -1867,16 +1867,52 @@ function gerarHTMLColaboradores() {
         <thead>
           <tr><th>Nome</th><th>Cargo</th><th>Setor</th><th>Líder Direto</th><th>Ações</th></tr>
         </thead>
-        <tbody>${rowsHTML}</tbody>
+        <tbody id="colabTbody">${rowsHTML}</tbody>
       </table>
     </div>
-    <p class="colab-count">${countMsg}</p>`;
+    <p class="colab-count" id="colabCount">${countMsg}</p>`;
 }
 
 function filtrarColaboradores(campo, valor) {
   _orgColabFiltro[campo] = valor;
-  const container = document.getElementById("orgTabColaboradores");
-  if (container) container.innerHTML = gerarHTMLColaboradores();
+  const f = _orgColabFiltro;
+
+  const lista = _orgColaboradores.filter(c => {
+    const busca = f.busca.toLowerCase();
+    const matchBusca = !busca ||
+      (c.nome  || '').toLowerCase().includes(busca) ||
+      (c.cargo || '').toLowerCase().includes(busca);
+    const matchSetor = !f.setor || (c.setor || '').toLowerCase().includes(f.setor.toLowerCase());
+    const matchCargo = !f.cargo || (c.cargo || '').toLowerCase().includes(f.cargo.toLowerCase());
+    return matchBusca && matchSetor && matchCargo;
+  });
+
+  const rowsHTML = lista.length
+    ? lista.map(c => `
+        <tr>
+          <td>${esc(c.nome)}</td>
+          <td>${esc(c.cargo || '—')}</td>
+          <td>${esc(c.setor || '—')}</td>
+          <td>${esc(c.lider_direto || '—')}</td>
+          <td class="colab-actions">
+            <button class="btn-org-leader btn-org-leader-edit" title="Editar"
+              onclick="abrirModalEditarColab('${esc(String(c.id))}')">✏</button>
+            <button class="btn-org-leader btn-org-leader-delete" title="Excluir"
+              onclick="abrirModalExcluirColab('${esc(String(c.id))}')">✕</button>
+          </td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="colab-empty">Nenhum colaborador encontrado.</td></tr>`;
+
+  const total = _orgColaboradores.length;
+  const found = lista.length;
+  const countMsg = total === 0
+    ? 'Nenhum colaborador cadastrado.'
+    : `${found} de ${total} colaborador${total !== 1 ? 'es' : ''}`;
+
+  const tbody = document.getElementById('colabTbody');
+  const count = document.getElementById('colabCount');
+  if (tbody) tbody.innerHTML = rowsHTML;
+  if (count) count.textContent = countMsg;
 }
 
 // ── Tabela Salarial ───────────────────────────────────────────────────────
