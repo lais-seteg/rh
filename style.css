@@ -393,11 +393,14 @@ body::before{content:'';position:fixed;inset:0;background:rgba(6,13,31,0.88);z-i
 .tipo-card-compact-arrow{color:var(--text-muted);flex-shrink:0;transition:transform .18s}
 .tipo-card-compact:hover .tipo-card-compact-arrow{transform:translateX(3px);color:var(--orange)}
 
-/* Bloco de lista — remove borda superior do list-header já que sol-block-header ocupa */
+/* Bloco de lista */
 .list-block{flex:1;display:flex;flex-direction:column;min-height:0}
-.list-block .list-header{border-top:none}
-.list-block .filtro-origem-wrap{border-top:none}
 .list-block .list-wrap{border:none;border-radius:0;box-shadow:none;background:transparent}
+
+/* Título "Solicitações" dentro da linha de filtros */
+.list-block-title{flex-shrink:0;font-size:.9rem;font-weight:700;color:var(--text-primary);
+  padding-right:.75rem;margin-right:.15rem;
+  border-right:1px solid var(--border-color);align-self:center}
 
 /* Light theme overrides */
 [data-theme="light"] .sol-block{background:var(--bg-card);border-color:var(--border-color)}
@@ -792,10 +795,10 @@ h1,h2,h3,strong { letter-spacing: -.02em; }
 /* ── Sidebar refinada ─────────────────────────── */
 .sidebar {
   background: linear-gradient(180deg, var(--bg-secondary) 0%, rgba(8,18,46,.98) 100%);
-  border-right: 1px solid rgba(255,255,255,.06);
+  border-right: 1px solid var(--border-color);
 }
 .sidebar-logo {
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: 1px solid var(--border-color);
   background: rgba(0,0,0,.12);
 }
 .sidebar-brand-name { font-size: .92rem; letter-spacing: -.01em; }
@@ -1453,9 +1456,9 @@ body.dash-active #viewDashboard.active { flex: 1; }
 
 /* ── 7. Padronização visual — hierarquia e espaçamentos ─────────────── */
 
-/* Top-bar — espaçamento do título melhorado */
+/* Top-bar — alinhado ao padding do main-content e footer */
 .top-bar {
-  padding: 0 1.75rem;
+  padding: 0 1.5rem;
 }
 .top-bar h2 {
   font-size: 1rem;
