@@ -125,6 +125,14 @@ function getAcoesDisponiveis(usuario, item) {
     return [];
   }
 
+  if (p === "direcao") {
+    if (s === "Aguardando análise do gestor") return ["aprovar", "reprovar"];
+    if (s === "Encaminhada ao RH")            return ["analise"];
+    if (s === "Em análise pelo RH")           return ["selecao", "finalizar"];
+    if (s === "Seleção em andamento")         return ["finalizar"];
+    return [];
+  }
+
   return [];
 }
 
@@ -1503,8 +1511,20 @@ function gerarBotoesAcaoItem(item) {
   }
 
   if (usuarioAtual.perfil === "direcao") {
-    // Observação — sempre disponível
     acoes += `<button class="btn-acao btn-acao-obs" title="Registrar observação" onclick="abrirModalObs('${item.id}')">${SVG_OBS}</button>`;
+    if (acoesDisp.includes("aprovar")) {
+      acoes += `<button class="btn-acao btn-acao-aprovar" title="Aprovar" onclick="aprovarDireto('${item.id}')">${SVG_CHECK}</button>`;
+      acoes += `<button class="btn-acao btn-acao-reprovar" title="Reprovar" onclick="abrirModalRejeitar('${item.id}')">${SVG_X}</button>`;
+    }
+    if (acoesDisp.includes("analise")) {
+      acoes += `<button class="btn-acao btn-acao-avancar" title="Em análise" onclick="abrirModalRhAcao('${item.id}','Em análise pelo RH')">${SVG_CLOCK}</button>`;
+    }
+    if (acoesDisp.includes("selecao")) {
+      acoes += `<button class="btn-acao btn-acao-avancar" title="Seleção em andamento" onclick="abrirModalRhAcao('${item.id}','Seleção em andamento')">${SVG_PLAY}</button>`;
+    }
+    if (acoesDisp.includes("finalizar")) {
+      acoes += `<button class="btn-acao btn-acao-finalizar" title="Finalizar" onclick="abrirModalRhAcao('${item.id}','Finalizada')">${SVG_CHECK}</button>`;
+    }
     acoes += `<button class="btn-acao btn-acao-danger" title="Excluir" onclick="abrirModalExcluir('${item.id}')">${SVG_TRASH}</button>`;
   }
 
