@@ -908,6 +908,7 @@ function salvarSolicitacao() {
       }]
     };
     solicitacoes[idx] = novo;
+    _syncItem(novo);
     mostrarToast("Solicitação atualizada com sucesso.");
   } else {
     const id     = gerarId();
@@ -939,6 +940,7 @@ function salvarSolicitacao() {
     };
     solicitacoes.unshift(novo);
     salvarLocal();
+    _syncItem(novo);
     const _origemSucesso = formOrigin;
     document.getElementById("sucessoNumero").textContent = "Protocolo " + id;
     document.getElementById("btnSucessoOk").onclick = () => {
@@ -976,6 +978,7 @@ function confirmarExcluir() {
   if (!id) return;
   solicitacoes = solicitacoes.filter(s => s.id !== id);
   salvarLocal();
+  sbExcluirSolicitacao(id).catch(e => console.error('[sync] Erro ao excluir:', e));
   fecharModal("modalExcluir");
   renderListagem();
   renderDashboard();
@@ -1111,6 +1114,7 @@ function salvarDecisao() {
 
   solicitacoes[idx] = { ...item, ...updates };
   salvarLocal();
+  _syncItem(solicitacoes[idx]);
   fecharModal("modalDecisao");
   renderListagem();
   renderDashboard();
@@ -1146,6 +1150,7 @@ function aprovarDireto(id) {
     ]
   };
   salvarLocal();
+  _syncItem(solicitacoes[idx]);
   renderListagem();
   renderDashboard();
   mostrarToast("Solicitação aprovada e encaminhada ao RH.");
@@ -1190,6 +1195,7 @@ function confirmarRejeitar() {
     ]
   };
   salvarLocal();
+  _syncItem(solicitacoes[idx]);
   fecharModal("modalRejeitar");
   renderListagem();
   renderDashboard();
@@ -1257,6 +1263,7 @@ function confirmarRhAcao() {
 
   solicitacoes[idx] = { ...item, ...updates };
   salvarLocal();
+  _syncItem(solicitacoes[idx]);
   fecharModal("modalRhAcao");
   renderListagem();
   renderDashboard();
@@ -1301,6 +1308,7 @@ function confirmarObs() {
     ]
   };
   salvarLocal();
+  _syncItem(solicitacoes[idx]);
   fecharModal("modalObs");
   renderListagem();
   renderDashboard();
@@ -2331,12 +2339,37 @@ function salvarLocal() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(solicitacoes));
 }
 
-function carregarLocal() {
+function _syncItem(item) {
+  if (!item) return;
+  sbUpsertSolicitacao(item).catch(e => console.error('[sync] Erro ao salvar solicitação:', e));
+}
+
+async function carregarLocal() {
+  const localData = (() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { return []; }
+  })();
+
   try {
-    solicitacoes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const remote = await sbCarregarSolicitacoes();
+    if (remote !== null) {
+      if (remote.length > 0) {
+        // Supabase tem dados — fonte principal
+        solicitacoes = remote;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(solicitacoes));
+      } else if (localData.length > 0) {
+        // Supabase vazio mas localStorage tem dados — migra automaticamente
+        solicitacoes = localData;
+        console.log('[sync] Migrando ' + localData.length + ' solicitação(ões) para o Supabase...');
+        localData.forEach(item => sbUpsertSolicitacao(item).catch(e => console.error('[sync] Migração:', e)));
+      } else {
+        solicitacoes = [];
+      }
+      return;
+    }
   } catch(e) {
-    solicitacoes = [];
+    console.error('[sync] Falha ao carregar do Supabase, usando cache local:', e);
   }
+  solicitacoes = localData;
 }
 
 function mostrarToast(msg) {
@@ -2682,8 +2715,8 @@ function vincularListeners() {
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────
-function init() {
-  carregarLocal();
+async function init() {
+  await carregarLocal();
   const sessao = sessionStorage.getItem(SESSION_KEY);
   if (sessao) {
     try {

@@ -313,6 +313,79 @@ async function sbExcluirEntradaSalarial(id) {
   return _sbPatch('/tabela_salarial?id=eq.' + encodeURIComponent(id), { ativo: false });
 }
 
+// ── Solicitações RH ───────────────────────────────────────────
+/*
+  Execute no SQL Editor do Supabase para criar a tabela de solicitações:
+
+  CREATE TABLE IF NOT EXISTS solicitacoes (
+    id               TEXT PRIMARY KEY,
+    tipo             TEXT NOT NULL,
+    status           TEXT NOT NULL,
+    criado_por       TEXT,
+    data_criacao     TIMESTAMPTZ,
+    data_atualizacao TIMESTAMPTZ,
+    objeto           JSONB NOT NULL,
+    created_at       TIMESTAMPTZ DEFAULT now()
+  );
+
+  ALTER TABLE solicitacoes ENABLE ROW LEVEL SECURITY;
+
+  CREATE POLICY "anon_select_solicitacoes" ON solicitacoes FOR SELECT TO anon USING (true);
+  CREATE POLICY "anon_insert_solicitacoes" ON solicitacoes FOR INSERT TO anon WITH CHECK (true);
+  CREATE POLICY "anon_update_solicitacoes" ON solicitacoes FOR UPDATE TO anon USING (true);
+  CREATE POLICY "anon_delete_solicitacoes" ON solicitacoes FOR DELETE TO anon USING (true);
+*/
+
+async function sbCarregarSolicitacoes() {
+  try {
+    const rows = await _sbGet('/solicitacoes?select=objeto&order=data_criacao.desc.nullslast');
+    return (rows || []).map(r => r.objeto).filter(Boolean);
+  } catch(e) {
+    console.error('[db] sbCarregarSolicitacoes:', e);
+    return null;
+  }
+}
+
+async function sbUpsertSolicitacao(item) {
+  const row = {
+    id:               item.id,
+    tipo:             item.tipo || '',
+    status:           item.status || '',
+    criado_por:       item.criadoPor || item.criadoPorNome || '',
+    data_criacao:     item.dataCriacao || item.data_criacao || null,
+    data_atualizacao: item.dataAtualizacao || item.data_ultima_edicao || null,
+    objeto:           item
+  };
+  const url = _SB_BASE + '/solicitacoes';
+  const headers = { ..._SB_HEADS, 'Prefer': 'resolution=merge-duplicates,return=minimal' };
+  let res;
+  try {
+    res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(row) });
+  } catch(e) {
+    throw new Error('Erro de rede: ' + e.message);
+  }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => String(res.status));
+    throw new Error('Supabase ' + res.status + ': ' + txt);
+  }
+  return true;
+}
+
+async function sbExcluirSolicitacao(id) {
+  const url = _SB_BASE + '/solicitacoes?id=eq.' + encodeURIComponent(id);
+  let res;
+  try {
+    res = await fetch(url, { method: 'DELETE', headers: _SB_HEADS });
+  } catch(e) {
+    throw new Error('Erro de rede: ' + e.message);
+  }
+  if (!res.ok) {
+    const txt = await res.text().catch(() => String(res.status));
+    throw new Error('Supabase ' + res.status + ': ' + txt);
+  }
+  return true;
+}
+
 // ── Autenticar pelo código de acesso ─────────────────────────
 async function autenticarPorCodigo(codigo) {
   if (!codigo || !codigo.trim()) {
