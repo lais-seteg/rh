@@ -2454,6 +2454,18 @@ function uv(id) {
   return el.value.trim().toUpperCase();
 }
 
+document.addEventListener("input", function(e) {
+  const el = e.target;
+  if (!el.classList.contains("form-control")) return;
+  const type = el.type || "";
+  if (type === "date" || type === "number" || type === "password" || type === "email") return;
+  if (el.classList.contains("mask-real")) return;
+  if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return;
+  const pos = el.selectionStart;
+  el.value = el.value.toUpperCase();
+  try { el.setSelectionRange(pos, pos); } catch(_) {}
+}, true);
+
 // ── Tema claro / escuro ───────────────────────────────────────────────────
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);

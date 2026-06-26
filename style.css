@@ -1102,8 +1102,8 @@ body.dash-active #viewDashboard.active { flex: 1; }
 .dash-empty-c-sub   { font-size: .76rem; color: var(--text-muted); margin: 0; }
 
 /* ── Formulário: campos em maiúsculo durante digitação ─────────────────── */
-.form-rh-body input.form-control:not([type="date"]):not([type="number"]):not(.mask-real),
-.form-rh-body textarea.form-control { text-transform: uppercase; }
+input.form-control:not([type="date"]):not([type="number"]):not([type="password"]):not([type="email"]):not(.mask-real),
+textarea.form-control { text-transform: uppercase; }
 
 /* ── Modal de Decisão ───────────────────────────────────────────────────── */
 .modal-sub { font-size: .72rem; color: var(--text-muted); margin-top: .15rem; }
