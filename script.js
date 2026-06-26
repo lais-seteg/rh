@@ -125,6 +125,14 @@ function getAcoesDisponiveis(usuario, item) {
     return [];
   }
 
+  if (p === "direcao") {
+    if (s === "Aguardando análise do gestor") return ["aprovar", "reprovar"];
+    if (s === "Encaminhada ao RH")            return ["analise"];
+    if (s === "Em análise pelo RH")           return ["selecao", "finalizar"];
+    if (s === "Seleção em andamento")         return ["finalizar"];
+    return [];
+  }
+
   return [];
 }
 
@@ -504,21 +512,7 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">3. Dados do Solicitante</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Nome</label>
-        <input id="f_solNome" class="form-control" value="${esc(d.solNome)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Cargo</label>
-        <input id="f_solCargo" class="form-control" value="${esc(d.solCargo)}" />
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section-block">
-    <h3 class="form-subtitle">4. Perfil do Cargo Solicitado</h3>
+    <h3 class="form-subtitle">3. Perfil do Cargo Solicitado</h3>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label required">Formação acadêmica</label>
@@ -552,6 +546,7 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
 // Adicionados: Setor de Destino, Departamento de Destino, Novo Líder Imediato, Salário, Data Prevista
 function htmlFormMudancaCargo(dados) {
   const d = dados || {};
+  const canSeeSalario = ["rh","direcao"].includes(usuarioAtual?.perfil);
   return `
   <div class="form-section-block">
     <h3 class="form-subtitle">1. Informações do Colaborador</h3>
@@ -572,21 +567,7 @@ function htmlFormMudancaCargo(dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">2. Dados do Solicitante / Responsável</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Nome</label>
-        <input id="f_respNome" class="form-control" value="${esc(d.respNome)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Cargo</label>
-        <input id="f_respCargo" class="form-control" value="${esc(d.respCargo)}" />
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section-block">
-    <h3 class="form-subtitle">3. Justificativa / Observações</h3>
+    <h3 class="form-subtitle">2. Justificativa / Observações</h3>
     <div class="form-grid">
       <div class="form-group full-width">
         <p class="form-hint">Se houver mudança de horários ou benefícios, informar neste campo.</p>
@@ -596,8 +577,15 @@ function htmlFormMudancaCargo(dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">4. Informações da Mudança Solicitada</h3>
+    <h3 class="form-subtitle">3. Informações da Mudança Solicitada</h3>
     <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label required">Novo Cargo</label>
+        <select id="f_novoCargo" class="form-control">
+          <option value="">Selecione</option>
+          ${CARGOS_RH.map(c=>`<option ${(d.novoCargo||"").toUpperCase()===c?"selected":""}>${c}</option>`).join("")}
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label required">Setor de Destino</label>
         <input id="f_setorDestino" class="form-control" placeholder="Ex: Projetos, Inovação..." value="${esc(d.setorDestino)}" />
@@ -606,10 +594,11 @@ function htmlFormMudancaCargo(dados) {
         <label class="form-label required">Novo Líder Imediato</label>
         <input id="f_novoLider" class="form-control" placeholder="Nome do novo líder" value="${esc(d.novoLider)}" />
       </div>
+      ${canSeeSalario ? `
       <div class="form-group">
-        <label class="form-label required">Salário</label>
-        <input id="f_salario" class="form-control mask-real" placeholder="R$ 0,00" value="${esc(d.salario)}" />
-      </div>
+        <label class="form-label">Salário</label>
+        <input id="f_salario" class="form-control mask-real" placeholder="Preenchido automaticamente ao selecionar o cargo" value="${esc(d.salario)}" />
+      </div>` : `<input type="hidden" id="f_salario" value="${esc(d.salario)}" />`}
       <div class="form-group">
         <label class="form-label required">Data Prevista para a Mudança</label>
         <input id="f_dataPrevista" class="form-control" type="date" value="${esc(d.dataPrevista)}" />
@@ -661,7 +650,7 @@ function afterFormRender() {
     if (lt.value) toggleLocalTrabalho(); // aplica estado inicial ao editar
   }
 
-  // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo
+  // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo (seleção/indicação)
   const fCargoSel = document.getElementById('f_cargo');
   if (fCargoSel) {
     fCargoSel.addEventListener('change', function() {
@@ -671,6 +660,19 @@ function afterFormRender() {
         const fSetor   = document.getElementById('f_setor');
         const fSalario = document.getElementById('f_salario');
         if (fSetor)   fSetor.value   = entrada.setor   || '';
+        if (fSalario) fSalario.value = entrada.salario || '';
+      }
+    });
+  }
+
+  // Auto-fill de salário ao selecionar novo cargo (mudança de cargo)
+  const fNovoCargo = document.getElementById('f_novoCargo');
+  if (fNovoCargo) {
+    fNovoCargo.addEventListener('change', function() {
+      const cargoSel = this.value.toUpperCase();
+      const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
+      if (entrada) {
+        const fSalario = document.getElementById('f_salario');
         if (fSalario) fSalario.value = entrada.salario || '';
       }
     });
@@ -796,8 +798,8 @@ function coletarForm() {
       modalidade:          uv("f_modalidade"),
       dataInicio:          v("f_dataInicio"),
       tipoRequisicao:      uv("f_tipoRequisicao"),
-      solNome:             uv("f_solNome"),
-      solCargo:            uv("f_solCargo"),
+      solNome:             usuarioAtual?.nome || "",
+      solCargo:            usuarioAtual?.setor || PERFIL_LABEL[usuarioAtual?.perfil] || "",
       formAcademica:       uv("f_formAcademica"),
       formAcademicaOutro:  uv("f_formAcademicaOutro"),
       conhecimentos:       uv("f_conhecimentos"),
@@ -809,16 +811,17 @@ function coletarForm() {
   } else {
     // [ALTERADO] Mudança de cargo — novos campos: setorDestino, departamentoDestino, novoLider, salario, dataPrevista
     return {
-      nomeColaborador:      uv("f_nomeColaborador"),
-      cargoAtual:           uv("f_cargoAtual"),
-      liderAtual:           uv("f_liderAtual"),
-      setorDestino:         uv("f_setorDestino"),
-      novoLider:            uv("f_novoLider"),            // [ALTERADO] novo
-      salario:              v("f_salario"),               // [ALTERADO] novo
-      dataPrevista:         v("f_dataPrevista"),          // [ALTERADO] novo
-      justificativa:        uv("f_justificativa"),
-      respNome:             uv("f_respNome"),
-      respCargo:            uv("f_respCargo")
+      nomeColaborador: uv("f_nomeColaborador"),
+      cargoAtual:      uv("f_cargoAtual"),
+      liderAtual:      uv("f_liderAtual"),
+      novoCargo:       uv("f_novoCargo"),
+      setorDestino:    uv("f_setorDestino"),
+      novoLider:       uv("f_novoLider"),
+      salario:         v("f_salario"),
+      dataPrevista:    v("f_dataPrevista"),
+      justificativa:   uv("f_justificativa"),
+      respNome:        usuarioAtual?.nome || "",
+      respCargo:       usuarioAtual?.setor || PERFIL_LABEL[usuarioAtual?.perfil] || ""
     };
   }
 }
@@ -853,27 +856,19 @@ function validarForm(dados) {
     if (!dados.numVagas)              return "Informe o número de vagas.";
     if (!dados.modalidade)            return "Informe a modalidade.";
     if (!dados.tipoRequisicao)        return "Informe o tipo de requisição.";
-    if (!dados.solNome)               return "Informe o nome do solicitante.";
-    if (!dados.solCargo)              return "Informe o cargo do solicitante.";
     if (!dados.formAcademica)         return "Informe a formação acadêmica exigida.";
     if (dados.formAcademica === "OUTROS" && !dados.formAcademicaOutro) return "Especifique a formação acadêmica.";
     if (!dados.conhecimentos)         return "Informe os conhecimentos indispensáveis.";
     if (!dados.experiencia)           return "Informe a experiência desejada.";
   } else {
-    // Seção 1 — colaborador
-    if (!dados.nomeColaborador)      return "Informe o nome do colaborador.";
-    if (!dados.cargoAtual)           return "Informe o cargo atual.";
-    if (!dados.liderAtual)           return "Informe o líder imediato atual.";
-    // Seção 2 — solicitante
-    if (!dados.respNome)             return "Informe o nome do responsável.";
-    if (!dados.respCargo)            return "Informe o cargo do responsável.";
-    // Seção 3 — justificativa
-    if (!dados.justificativa)        return "Informe a justificativa / observações.";
-    // Seção 4 — mudança
-    if (!dados.setorDestino)         return "Informe o setor de destino.";
-    if (!dados.novoLider)            return "Informe o novo líder imediato.";
-    if (!dados.salario)              return "Informe o salário.";
-    if (!dados.dataPrevista)         return "Informe a data prevista para a mudança.";
+    if (!dados.nomeColaborador) return "Informe o nome do colaborador.";
+    if (!dados.cargoAtual)      return "Informe o cargo atual.";
+    if (!dados.liderAtual)      return "Informe o líder imediato atual.";
+    if (!dados.justificativa)   return "Informe a justificativa / observações.";
+    if (!dados.novoCargo)       return "Selecione o novo cargo.";
+    if (!dados.setorDestino)    return "Informe o setor de destino.";
+    if (!dados.novoLider)       return "Informe o novo líder imediato.";
+    if (!dados.dataPrevista)    return "Informe a data prevista para a mudança.";
   }
   return null;
 }
@@ -1366,8 +1361,10 @@ function gerarHTMLDetalhes(item) {
       ${det("Número de vagas", d.numVagas)} ${det("Modalidade", d.modalidade)}
       ${d.dataInicio ? det("Data de início prevista", formatarData(d.dataInicio)) : ""}
       ${det("Tipo de Requisição", d.tipoRequisicao, "full")}
+      ${["rh","direcao"].includes(usuarioAtual?.perfil) ? `
       <div class="detail-section-title full"><span>Dados do Solicitante</span></div>
       ${det("Nome", d.solNome)} ${det("Cargo", d.solCargo)}
+      ` : ""}
       <div class="detail-section-title full"><span>Perfil do Cargo</span></div>
       ${det("Formação acadêmica", d.formAcademica === "Outros" ? (d.formAcademicaOutro || "Outros") : d.formAcademica)}
       ${det("Conhecimentos indispensáveis", d.conhecimentos, "full")}
@@ -1376,17 +1373,22 @@ function gerarHTMLDetalhes(item) {
     `;
   } else {
     // [ALTERADO] Detalhes de mudança de cargo com novos campos
+    const canSeePrivado = ["rh","direcao"].includes(usuarioAtual?.perfil);
     camposHTML = `
       <div class="detail-section-title full"><span>Informações do Colaborador</span></div>
       ${det("Nome", d.nomeColaborador, "full")}
       ${det("Cargo Atual", d.cargoAtual)} ${det("Líder Atual", d.liderAtual)}
       <div class="detail-section-title full"><span>Mudança Solicitada</span></div>
+      ${d.novoCargo ? det("Novo Cargo", d.novoCargo) : ""}
       ${det("Setor de Destino", d.setorDestino)}
-      ${det("Novo Líder Imediato", d.novoLider)} ${["rh","direcao"].includes(usuarioAtual?.perfil) ? det("Salário", d.salario) : ""}
+      ${det("Novo Líder Imediato", d.novoLider)}
+      ${canSeePrivado && d.salario ? det("Salário", d.salario) : ""}
       ${d.dataPrevista ? det("Data Prevista", formatarData(d.dataPrevista)) : ""}
       ${det("Justificativa / Observações", d.justificativa, "full")}
-      <div class="detail-section-title full"><span>Dados do Responsável</span></div>
-      ${det("Nome", d.respNome)} ${det("Cargo", d.respCargo)}
+      ${canSeePrivado ? `
+        <div class="detail-section-title full"><span>Dados do Solicitante</span></div>
+        ${det("Nome", d.respNome)} ${det("Setor", d.respCargo)}
+      ` : ""}
     `;
   }
 
@@ -1503,8 +1505,20 @@ function gerarBotoesAcaoItem(item) {
   }
 
   if (usuarioAtual.perfil === "direcao") {
-    // Observação — sempre disponível
     acoes += `<button class="btn-acao btn-acao-obs" title="Registrar observação" onclick="abrirModalObs('${item.id}')">${SVG_OBS}</button>`;
+    if (acoesDisp.includes("aprovar")) {
+      acoes += `<button class="btn-acao btn-acao-aprovar" title="Aprovar" onclick="aprovarDireto('${item.id}')">${SVG_CHECK}</button>`;
+      acoes += `<button class="btn-acao btn-acao-reprovar" title="Reprovar" onclick="abrirModalRejeitar('${item.id}')">${SVG_X}</button>`;
+    }
+    if (acoesDisp.includes("analise")) {
+      acoes += `<button class="btn-acao btn-acao-avancar" title="Em análise" onclick="abrirModalRhAcao('${item.id}','Em análise pelo RH')">${SVG_CLOCK}</button>`;
+    }
+    if (acoesDisp.includes("selecao")) {
+      acoes += `<button class="btn-acao btn-acao-avancar" title="Seleção em andamento" onclick="abrirModalRhAcao('${item.id}','Seleção em andamento')">${SVG_PLAY}</button>`;
+    }
+    if (acoesDisp.includes("finalizar")) {
+      acoes += `<button class="btn-acao btn-acao-finalizar" title="Finalizar" onclick="abrirModalRhAcao('${item.id}','Finalizada')">${SVG_CHECK}</button>`;
+    }
     acoes += `<button class="btn-acao btn-acao-danger" title="Excluir" onclick="abrirModalExcluir('${item.id}')">${SVG_TRASH}</button>`;
   }
 
