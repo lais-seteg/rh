@@ -560,6 +560,7 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
 // Adicionados: Setor de Destino, Departamento de Destino, Novo Líder Imediato, Salário, Data Prevista
 function htmlFormMudancaCargo(dados) {
   const d = dados || {};
+  const canSeeSalario = ["rh","direcao"].includes(usuarioAtual?.perfil);
   return `
   <div class="form-section-block">
     <h3 class="form-subtitle">1. Informações do Colaborador</h3>
@@ -580,21 +581,7 @@ function htmlFormMudancaCargo(dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">2. Dados do Solicitante / Responsável</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Nome</label>
-        <input id="f_respNome" class="form-control" value="${esc(d.respNome)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Cargo</label>
-        <input id="f_respCargo" class="form-control" value="${esc(d.respCargo)}" />
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section-block">
-    <h3 class="form-subtitle">3. Justificativa / Observações</h3>
+    <h3 class="form-subtitle">2. Justificativa / Observações</h3>
     <div class="form-grid">
       <div class="form-group full-width">
         <p class="form-hint">Se houver mudança de horários ou benefícios, informar neste campo.</p>
@@ -604,8 +591,15 @@ function htmlFormMudancaCargo(dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">4. Informações da Mudança Solicitada</h3>
+    <h3 class="form-subtitle">3. Informações da Mudança Solicitada</h3>
     <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label required">Novo Cargo</label>
+        <select id="f_novoCargo" class="form-control">
+          <option value="">Selecione</option>
+          ${CARGOS_RH.map(c=>`<option ${(d.novoCargo||"").toUpperCase()===c?"selected":""}>${c}</option>`).join("")}
+        </select>
+      </div>
       <div class="form-group">
         <label class="form-label required">Setor de Destino</label>
         <input id="f_setorDestino" class="form-control" placeholder="Ex: Projetos, Inovação..." value="${esc(d.setorDestino)}" />
@@ -614,10 +608,11 @@ function htmlFormMudancaCargo(dados) {
         <label class="form-label required">Novo Líder Imediato</label>
         <input id="f_novoLider" class="form-control" placeholder="Nome do novo líder" value="${esc(d.novoLider)}" />
       </div>
+      ${canSeeSalario ? `
       <div class="form-group">
-        <label class="form-label required">Salário</label>
-        <input id="f_salario" class="form-control mask-real" placeholder="R$ 0,00" value="${esc(d.salario)}" />
-      </div>
+        <label class="form-label">Salário</label>
+        <input id="f_salario" class="form-control mask-real" placeholder="Preenchido automaticamente ao selecionar o cargo" value="${esc(d.salario)}" />
+      </div>` : `<input type="hidden" id="f_salario" value="${esc(d.salario)}" />`}
       <div class="form-group">
         <label class="form-label required">Data Prevista para a Mudança</label>
         <input id="f_dataPrevista" class="form-control" type="date" value="${esc(d.dataPrevista)}" />
@@ -669,7 +664,7 @@ function afterFormRender() {
     if (lt.value) toggleLocalTrabalho(); // aplica estado inicial ao editar
   }
 
-  // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo
+  // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo (seleção/indicação)
   const fCargoSel = document.getElementById('f_cargo');
   if (fCargoSel) {
     fCargoSel.addEventListener('change', function() {
@@ -679,6 +674,19 @@ function afterFormRender() {
         const fSetor   = document.getElementById('f_setor');
         const fSalario = document.getElementById('f_salario');
         if (fSetor)   fSetor.value   = entrada.setor   || '';
+        if (fSalario) fSalario.value = entrada.salario || '';
+      }
+    });
+  }
+
+  // Auto-fill de salário ao selecionar novo cargo (mudança de cargo)
+  const fNovoCargo = document.getElementById('f_novoCargo');
+  if (fNovoCargo) {
+    fNovoCargo.addEventListener('change', function() {
+      const cargoSel = this.value.toUpperCase();
+      const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
+      if (entrada) {
+        const fSalario = document.getElementById('f_salario');
         if (fSalario) fSalario.value = entrada.salario || '';
       }
     });
@@ -817,16 +825,17 @@ function coletarForm() {
   } else {
     // [ALTERADO] Mudança de cargo — novos campos: setorDestino, departamentoDestino, novoLider, salario, dataPrevista
     return {
-      nomeColaborador:      uv("f_nomeColaborador"),
-      cargoAtual:           uv("f_cargoAtual"),
-      liderAtual:           uv("f_liderAtual"),
-      setorDestino:         uv("f_setorDestino"),
-      novoLider:            uv("f_novoLider"),            // [ALTERADO] novo
-      salario:              v("f_salario"),               // [ALTERADO] novo
-      dataPrevista:         v("f_dataPrevista"),          // [ALTERADO] novo
-      justificativa:        uv("f_justificativa"),
-      respNome:             uv("f_respNome"),
-      respCargo:            uv("f_respCargo")
+      nomeColaborador: uv("f_nomeColaborador"),
+      cargoAtual:      uv("f_cargoAtual"),
+      liderAtual:      uv("f_liderAtual"),
+      novoCargo:       uv("f_novoCargo"),
+      setorDestino:    uv("f_setorDestino"),
+      novoLider:       uv("f_novoLider"),
+      salario:         v("f_salario"),
+      dataPrevista:    v("f_dataPrevista"),
+      justificativa:   uv("f_justificativa"),
+      respNome:        usuarioAtual?.nome || "",
+      respCargo:       usuarioAtual?.setor || PERFIL_LABEL[usuarioAtual?.perfil] || ""
     };
   }
 }
@@ -868,20 +877,14 @@ function validarForm(dados) {
     if (!dados.conhecimentos)         return "Informe os conhecimentos indispensáveis.";
     if (!dados.experiencia)           return "Informe a experiência desejada.";
   } else {
-    // Seção 1 — colaborador
-    if (!dados.nomeColaborador)      return "Informe o nome do colaborador.";
-    if (!dados.cargoAtual)           return "Informe o cargo atual.";
-    if (!dados.liderAtual)           return "Informe o líder imediato atual.";
-    // Seção 2 — solicitante
-    if (!dados.respNome)             return "Informe o nome do responsável.";
-    if (!dados.respCargo)            return "Informe o cargo do responsável.";
-    // Seção 3 — justificativa
-    if (!dados.justificativa)        return "Informe a justificativa / observações.";
-    // Seção 4 — mudança
-    if (!dados.setorDestino)         return "Informe o setor de destino.";
-    if (!dados.novoLider)            return "Informe o novo líder imediato.";
-    if (!dados.salario)              return "Informe o salário.";
-    if (!dados.dataPrevista)         return "Informe a data prevista para a mudança.";
+    if (!dados.nomeColaborador) return "Informe o nome do colaborador.";
+    if (!dados.cargoAtual)      return "Informe o cargo atual.";
+    if (!dados.liderAtual)      return "Informe o líder imediato atual.";
+    if (!dados.justificativa)   return "Informe a justificativa / observações.";
+    if (!dados.novoCargo)       return "Selecione o novo cargo.";
+    if (!dados.setorDestino)    return "Informe o setor de destino.";
+    if (!dados.novoLider)       return "Informe o novo líder imediato.";
+    if (!dados.dataPrevista)    return "Informe a data prevista para a mudança.";
   }
   return null;
 }
@@ -1384,17 +1387,22 @@ function gerarHTMLDetalhes(item) {
     `;
   } else {
     // [ALTERADO] Detalhes de mudança de cargo com novos campos
+    const canSeePrivado = ["rh","direcao"].includes(usuarioAtual?.perfil);
     camposHTML = `
       <div class="detail-section-title full"><span>Informações do Colaborador</span></div>
       ${det("Nome", d.nomeColaborador, "full")}
       ${det("Cargo Atual", d.cargoAtual)} ${det("Líder Atual", d.liderAtual)}
       <div class="detail-section-title full"><span>Mudança Solicitada</span></div>
+      ${d.novoCargo ? det("Novo Cargo", d.novoCargo) : ""}
       ${det("Setor de Destino", d.setorDestino)}
-      ${det("Novo Líder Imediato", d.novoLider)} ${["rh","direcao"].includes(usuarioAtual?.perfil) ? det("Salário", d.salario) : ""}
+      ${det("Novo Líder Imediato", d.novoLider)}
+      ${canSeePrivado && d.salario ? det("Salário", d.salario) : ""}
       ${d.dataPrevista ? det("Data Prevista", formatarData(d.dataPrevista)) : ""}
       ${det("Justificativa / Observações", d.justificativa, "full")}
-      <div class="detail-section-title full"><span>Dados do Responsável</span></div>
-      ${det("Nome", d.respNome)} ${det("Cargo", d.respCargo)}
+      ${canSeePrivado ? `
+        <div class="detail-section-title full"><span>Dados do Solicitante</span></div>
+        ${det("Nome", d.respNome)} ${det("Setor", d.respCargo)}
+      ` : ""}
     `;
   }
 
