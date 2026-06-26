@@ -374,10 +374,21 @@ function renderDashRecentes() {
 }
 
 // ── Formulários ──────────────────────────────────────────────────────────
-async function abrirFormPorTipo(tipo) {
-  if (!_tabelaSalarial.length) {
-    _tabelaSalarial = await sbCarregarTabelaSalarial();
+let _carregandoTabela = false;
+
+async function _garantirTabelaSalarial() {
+  if (_tabelaSalarial.length) return;
+  if (_carregandoTabela) {
+    await new Promise(r => { const t = setInterval(() => { if (!_carregandoTabela) { clearInterval(t); r(); } }, 50); });
+    return;
   }
+  _carregandoTabela = true;
+  try { _tabelaSalarial = await sbCarregarTabelaSalarial(); }
+  finally { _carregandoTabela = false; }
+}
+
+async function abrirFormPorTipo(tipo) {
+  await _garantirTabelaSalarial();
   tipoFormAtual = tipo;
   idEdicaoAtual = null;
   formOrigin = "solicitacoes";
@@ -386,9 +397,7 @@ async function abrirFormPorTipo(tipo) {
 }
 
 async function abrirFormParaEditar(id) {
-  if (!_tabelaSalarial.length) {
-    _tabelaSalarial = await sbCarregarTabelaSalarial();
-  }
+  await _garantirTabelaSalarial();
   const item = solicitacoes.find(s => s.id === id);
   if (!item) return;
   tipoFormAtual = item.tipo;
