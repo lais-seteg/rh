@@ -512,21 +512,7 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
   </div>
 
   <div class="form-section-block">
-    <h3 class="form-subtitle">3. Dados do Solicitante</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Nome</label>
-        <input id="f_solNome" class="form-control" value="${esc(d.solNome)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Cargo</label>
-        <input id="f_solCargo" class="form-control" value="${esc(d.solCargo)}" />
-      </div>
-    </div>
-  </div>
-
-  <div class="form-section-block">
-    <h3 class="form-subtitle">4. Perfil do Cargo Solicitado</h3>
+    <h3 class="form-subtitle">3. Perfil do Cargo Solicitado</h3>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label required">Formação acadêmica</label>
@@ -812,8 +798,8 @@ function coletarForm() {
       modalidade:          uv("f_modalidade"),
       dataInicio:          v("f_dataInicio"),
       tipoRequisicao:      uv("f_tipoRequisicao"),
-      solNome:             uv("f_solNome"),
-      solCargo:            uv("f_solCargo"),
+      solNome:             usuarioAtual?.nome || "",
+      solCargo:            usuarioAtual?.setor || PERFIL_LABEL[usuarioAtual?.perfil] || "",
       formAcademica:       uv("f_formAcademica"),
       formAcademicaOutro:  uv("f_formAcademicaOutro"),
       conhecimentos:       uv("f_conhecimentos"),
@@ -870,8 +856,6 @@ function validarForm(dados) {
     if (!dados.numVagas)              return "Informe o número de vagas.";
     if (!dados.modalidade)            return "Informe a modalidade.";
     if (!dados.tipoRequisicao)        return "Informe o tipo de requisição.";
-    if (!dados.solNome)               return "Informe o nome do solicitante.";
-    if (!dados.solCargo)              return "Informe o cargo do solicitante.";
     if (!dados.formAcademica)         return "Informe a formação acadêmica exigida.";
     if (dados.formAcademica === "OUTROS" && !dados.formAcademicaOutro) return "Especifique a formação acadêmica.";
     if (!dados.conhecimentos)         return "Informe os conhecimentos indispensáveis.";
@@ -1377,8 +1361,10 @@ function gerarHTMLDetalhes(item) {
       ${det("Número de vagas", d.numVagas)} ${det("Modalidade", d.modalidade)}
       ${d.dataInicio ? det("Data de início prevista", formatarData(d.dataInicio)) : ""}
       ${det("Tipo de Requisição", d.tipoRequisicao, "full")}
+      ${["rh","direcao"].includes(usuarioAtual?.perfil) ? `
       <div class="detail-section-title full"><span>Dados do Solicitante</span></div>
       ${det("Nome", d.solNome)} ${det("Cargo", d.solCargo)}
+      ` : ""}
       <div class="detail-section-title full"><span>Perfil do Cargo</span></div>
       ${det("Formação acadêmica", d.formAcademica === "Outros" ? (d.formAcademicaOutro || "Outros") : d.formAcademica)}
       ${det("Conhecimentos indispensáveis", d.conhecimentos, "full")}
