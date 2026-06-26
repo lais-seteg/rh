@@ -374,7 +374,10 @@ function renderDashRecentes() {
 }
 
 // ── Formulários ──────────────────────────────────────────────────────────
-function abrirFormPorTipo(tipo) {
+async function abrirFormPorTipo(tipo) {
+  if (!_tabelaSalarial.length) {
+    _tabelaSalarial = await sbCarregarTabelaSalarial();
+  }
   tipoFormAtual = tipo;
   idEdicaoAtual = null;
   formOrigin = "solicitacoes";
@@ -382,7 +385,10 @@ function abrirFormPorTipo(tipo) {
   mostrarViewForm();
 }
 
-function abrirFormParaEditar(id) {
+async function abrirFormParaEditar(id) {
+  if (!_tabelaSalarial.length) {
+    _tabelaSalarial = await sbCarregarTabelaSalarial();
+  }
   const item = solicitacoes.find(s => s.id === id);
   if (!item) return;
   tipoFormAtual = item.tipo;
@@ -492,27 +498,8 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
     </div>
   </div>
 
-  <!-- [ALTERADO] Seção Jornada e Benefícios — exibida somente quando Local = EXTERNO -->
-  <div class="form-section-block" id="grupoJornadaBeneficios" style="display:${isExterno?"":"none"}">
-    <h3 class="form-subtitle">2. Jornada e Benefícios</h3>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label required">Jornada / Horário de Trabalho</label>
-        <input id="f_jornada" class="form-control" placeholder="Ex: 08:00 às 18:00, Segunda a Sexta" value="${esc(d.jornada)}" />
-      </div>
-      <div class="form-group">
-        <label class="form-label required">Quantidade de horas semanais</label>
-        <input id="f_horasSemana" class="form-control" type="number" min="1" max="60" placeholder="Ex: 44" value="${esc(d.horasSemana)}" />
-      </div>
-      <div class="form-group full-width">
-        <label class="form-label">Benefícios</label>
-        ${htmlBeneficiosCheckboxes(d.beneficios, true)}
-      </div>
-    </div>
-  </div>
-
   <div class="form-section-block">
-    <h3 class="form-subtitle">3. Perfil do Cargo Solicitado</h3>
+    <h3 class="form-subtitle">2. Perfil do Cargo Solicitado</h3>
     <div class="form-grid">
       <div class="form-group">
         <label class="form-label required">Formação acadêmica</label>
@@ -536,6 +523,24 @@ function htmlFormSelecaoIndicacao(tipo, dados) {
       <div class="form-group full-width">
         <label class="form-label">Observações gerais</label>
         <textarea id="f_observacoes" class="form-control" rows="3">${esc(d.observacoes)}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section-block" id="grupoJornadaBeneficios" style="display:${isExterno?"":"none"}">
+    <h3 class="form-subtitle">3. Jornada e Benefícios</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label required">Jornada / Horário de Trabalho</label>
+        <input id="f_jornada" class="form-control" placeholder="Ex: 08:00 às 18:00, Segunda a Sexta" value="${esc(d.jornada)}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label required">Quantidade de horas semanais</label>
+        <input id="f_horasSemana" class="form-control" type="number" min="1" max="60" placeholder="Ex: 44" value="${esc(d.horasSemana)}" />
+      </div>
+      <div class="form-group full-width">
+        <label class="form-label">Benefícios</label>
+        ${htmlBeneficiosCheckboxes(d.beneficios, true)}
       </div>
     </div>
   </div>`;
@@ -665,15 +670,17 @@ function afterFormRender() {
     });
   }
 
-  // Auto-fill de salário ao selecionar novo cargo (mudança de cargo)
+  // Auto-fill de setor de destino e salário ao selecionar novo cargo (mudança de cargo)
   const fNovoCargo = document.getElementById('f_novoCargo');
   if (fNovoCargo) {
     fNovoCargo.addEventListener('change', function() {
       const cargoSel = this.value.toUpperCase();
       const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
       if (entrada) {
-        const fSalario = document.getElementById('f_salario');
-        if (fSalario) fSalario.value = entrada.salario || '';
+        const fSetorDestino = document.getElementById('f_setorDestino');
+        const fSalario      = document.getElementById('f_salario');
+        if (fSetorDestino) fSetorDestino.value = entrada.setor   || '';
+        if (fSalario)      fSalario.value      = entrada.salario || '';
       }
     });
   }
