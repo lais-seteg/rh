@@ -61,14 +61,22 @@ CREATE TABLE IF NOT EXISTS colaboradores (
 );
 
 
--- ── 6. Tabela Salarial (Organograma) — NOVA ────────────────────────
+-- ── 6. Tabela Salarial (Organograma) ───────────────────────────────
+-- salario_clt e salario_pj: auto-fill no formulário de requisição.
+-- Estágio e Horista são preenchidos manualmente pelo RH.
+--
+-- Migração (execute se a tabela já existir):
+--   ALTER TABLE tabela_salarial ADD COLUMN IF NOT EXISTS salario_clt TEXT;
+--   ALTER TABLE tabela_salarial ADD COLUMN IF NOT EXISTS salario_pj  TEXT;
+--   ALTER TABLE tabela_salarial DROP COLUMN IF EXISTS salario;
 CREATE TABLE IF NOT EXISTS tabela_salarial (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  cargo      TEXT NOT NULL,
-  setor      TEXT NOT NULL,
-  salario    TEXT NOT NULL,
-  ativo      BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  cargo       TEXT NOT NULL,
+  setor       TEXT NOT NULL,
+  salario_clt TEXT,
+  salario_pj  TEXT,
+  ativo       BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
 );
 
 

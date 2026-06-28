@@ -294,19 +294,19 @@ async function sbExcluirColaborador(id) {
 // ── Tabela Salarial — funções de leitura e escrita ───────────
 async function sbCarregarTabelaSalarial() {
   try {
-    return await _sbGet('/tabela_salarial?ativo=eq.true&select=id,cargo,setor,salario&order=cargo.asc');
+    return await _sbGet('/tabela_salarial?ativo=eq.true&select=id,cargo,setor,salario_clt,salario_pj&order=cargo.asc');
   } catch(e) {
     console.error('[db] sbCarregarTabelaSalarial:', e);
     return [];
   }
 }
 
-async function sbCriarEntradaSalarial(cargo, setor, salario) {
-  return _sbPost('/tabela_salarial', { cargo, setor, salario, ativo: true });
+async function sbCriarEntradaSalarial(cargo, setor, salario_clt, salario_pj) {
+  return _sbPost('/tabela_salarial', { cargo, setor, salario_clt, salario_pj, ativo: true });
 }
 
-async function sbEditarEntradaSalarial(id, cargo, setor, salario) {
-  return _sbPatch('/tabela_salarial?id=eq.' + encodeURIComponent(id), { cargo, setor, salario });
+async function sbEditarEntradaSalarial(id, cargo, setor, salario_clt, salario_pj) {
+  return _sbPatch('/tabela_salarial?id=eq.' + encodeURIComponent(id), { cargo, setor, salario_clt, salario_pj });
 }
 
 async function sbExcluirEntradaSalarial(id) {

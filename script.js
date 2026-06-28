@@ -359,14 +359,14 @@ function renderDashRecentes() {
     </tr>`).join("")}</tbody>
   </table></div>`;
 
-  footer.innerHTML = `<div class="dash-pagination">
-    <span class="dash-pag-info">Mostrando ${inicio+1}–${fim} de ${total} registro${total!==1?"s":""}</span>
-    <div class="dash-pag-controls">
+  footer.innerHTML = `<div class="pagination-container">
+    <div id="dashPagInfo" class="pagination-info">${inicio+1}–${fim} de ${total} registro${total!==1?"s":""}</div>
+    <div class="pagination-controls">
       <button class="btn-pagination" id="dashPrevPage" ${dashPagina<=1?"disabled":""}>‹</button>
       <span class="page-number">${dashPagina}</span>
-      <span class="dash-pag-sep">/ ${totalPags}</span>
       <button class="btn-pagination" id="dashNextPage" ${dashPagina>=totalPags?"disabled":""}>›</button>
     </div>
+    <div class="pagination-per-page"><span>${totalPags} página${totalPags!==1?"s":""}</span></div>
   </div>`;
 
   document.getElementById("dashPrevPage")?.addEventListener("click", () => { dashPagina--; renderDashRecentes(); });
@@ -665,17 +665,41 @@ function afterFormRender() {
   }
 
   // Auto-fill de setor e salário a partir da tabela salarial ao selecionar cargo (seleção/indicação)
+  function _aplicarSalarioPorContrato(entrada) {
+    const fSalario      = document.getElementById('f_salario');
+    const fTipoContrato = document.getElementById('f_tipoContrato');
+    if (!fSalario || !entrada) return;
+    const tipo = (fTipoContrato?.value || '').toUpperCase();
+    if (tipo === 'CLT') {
+      fSalario.value = entrada.salario_clt || '';
+    } else if (tipo === 'PJ') {
+      fSalario.value = entrada.salario_pj || '';
+    } else {
+      // Estágio e Horista: RH preenche manualmente — limpa o campo
+      fSalario.value = '';
+    }
+  }
+
   const fCargoSel = document.getElementById('f_cargo');
   if (fCargoSel) {
     fCargoSel.addEventListener('change', function() {
       const cargoSel = this.value.toUpperCase();
       const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
       if (entrada) {
-        const fSetor   = document.getElementById('f_setor');
-        const fSalario = document.getElementById('f_salario');
-        if (fSetor)   fSetor.value   = entrada.setor   || '';
-        if (fSalario) fSalario.value = entrada.salario || '';
+        const fSetor = document.getElementById('f_setor');
+        if (fSetor) fSetor.value = entrada.setor || '';
+        _aplicarSalarioPorContrato(entrada);
       }
+    });
+  }
+
+  // Quando tipo de contrato muda, re-aplica o salário com base no cargo já selecionado
+  const fTipoContrato = document.getElementById('f_tipoContrato');
+  if (fTipoContrato && fCargoSel) {
+    fTipoContrato.addEventListener('change', function() {
+      const cargoSel = (fCargoSel.value || '').toUpperCase();
+      const entrada = _tabelaSalarial.find(e => (e.cargo || '').toUpperCase() === cargoSel);
+      if (entrada) _aplicarSalarioPorContrato(entrada);
     });
   }
 
@@ -688,8 +712,8 @@ function afterFormRender() {
       if (entrada) {
         const fSetorDestino = document.getElementById('f_setorDestino');
         const fSalario      = document.getElementById('f_salario');
-        if (fSetorDestino) fSetorDestino.value = entrada.setor   || '';
-        if (fSalario)      fSalario.value      = entrada.salario || '';
+        if (fSetorDestino) fSetorDestino.value = entrada.setor || '';
+        if (fSalario) fSalario.value = entrada.salario_clt || entrada.salario_pj || '';
       }
     });
   }
@@ -1961,7 +1985,8 @@ function gerarHTMLTabelaSalarial() {
         <tr>
           <td>${esc(e.cargo)}</td>
           <td>${esc(e.setor)}</td>
-          <td>${esc(e.salario)}</td>
+          <td>${esc(e.salario_clt) || '—'}</td>
+          <td>${esc(e.salario_pj)  || '—'}</td>
           <td class="colab-actions">
             <button class="btn-org-leader btn-org-leader-edit" title="Editar"
               onclick="abrirModalEditarSalarial('${esc(String(e.id))}')">✏</button>
@@ -1969,13 +1994,13 @@ function gerarHTMLTabelaSalarial() {
               onclick="abrirModalExcluirSalarial('${esc(String(e.id))}', '${esc(e.cargo)}')">✕</button>
           </td>
         </tr>`).join('')
-    : `<tr><td colspan="4" class="colab-empty">Nenhuma entrada cadastrada. Use o botão acima para adicionar.</td></tr>`;
+    : `<tr><td colspan="5" class="colab-empty">Nenhuma entrada cadastrada. Use o botão acima para adicionar.</td></tr>`;
 
   return `
     <div class="colab-table-wrap">
       <table class="colab-table">
         <thead>
-          <tr><th>Cargo</th><th>Setor</th><th>Salário</th><th>Ações</th></tr>
+          <tr><th>Cargo</th><th>Setor</th><th>Salário CLT</th><th>Salário PJ</th><th>Ações</th></tr>
         </thead>
         <tbody>${rowsHTML}</tbody>
       </table>
@@ -1996,23 +2021,25 @@ function _popularSelectCargo(selectId, valorAtual) {
 function abrirModalNovaSalarial() {
   if (!["rh","direcao"].includes(usuarioAtual?.perfil)) return;
   _popularSelectCargo("tsCargo", "");
-  document.getElementById("tsSetor").value   = "";
-  document.getElementById("tsSalario").value = "";
+  document.getElementById("tsSetor").value      = "";
+  document.getElementById("tsSalarioClt").value = "";
+  document.getElementById("tsSalarioPj").value  = "";
   document.getElementById("modalNovaSalarial").classList.add("active");
   document.getElementById("tsCargo").focus();
 }
 
 async function salvarNovaSalarial() {
-  const cargo   = document.getElementById("tsCargo").value.trim();
-  const setor   = document.getElementById("tsSetor").value.trim();
-  const salario = document.getElementById("tsSalario").value.trim();
-  if (!cargo)   { mostrarToast("Selecione o cargo."); return; }
-  if (!setor)   { mostrarToast("Informe o setor."); return; }
-  if (!salario) { mostrarToast("Informe o salário."); return; }
+  const cargo       = document.getElementById("tsCargo").value.trim();
+  const setor       = document.getElementById("tsSetor").value.trim();
+  const salario_clt = document.getElementById("tsSalarioClt").value.trim();
+  const salario_pj  = document.getElementById("tsSalarioPj").value.trim();
+  if (!cargo) { mostrarToast("Selecione o cargo."); return; }
+  if (!setor) { mostrarToast("Informe o setor."); return; }
+  if (!salario_clt && !salario_pj) { mostrarToast("Informe ao menos um salário (CLT ou PJ)."); return; }
   const btn = document.querySelector("#modalNovaSalarial .btn-primary");
   if (btn) { btn.disabled = true; btn.textContent = "Salvando..."; }
   try {
-    await sbCriarEntradaSalarial(cargo.toUpperCase(), setor, salario);
+    await sbCriarEntradaSalarial(cargo.toUpperCase(), setor, salario_clt, salario_pj);
     fecharModal("modalNovaSalarial");
     mostrarToast("Entrada cadastrada com sucesso.");
     _tabelaSalarial = await sbCarregarTabelaSalarial();
@@ -2032,21 +2059,23 @@ function abrirModalEditarSalarial(id) {
   if (!e) return;
   _tsEditId = id;
   _popularSelectCargo("tsEditCargo", e.cargo);
-  document.getElementById("tsEditSetor").value   = e.setor;
-  document.getElementById("tsEditSalario").value = e.salario;
+  document.getElementById("tsEditSetor").value      = e.setor;
+  document.getElementById("tsEditSalarioClt").value = e.salario_clt || '';
+  document.getElementById("tsEditSalarioPj").value  = e.salario_pj  || '';
   document.getElementById("modalEditarSalarial").classList.add("active");
 }
 
 async function salvarEditarSalarial() {
   if (!_tsEditId) return;
-  const cargo   = document.getElementById("tsEditCargo").value.trim();
-  const setor   = document.getElementById("tsEditSetor").value.trim();
-  const salario = document.getElementById("tsEditSalario").value.trim();
-  if (!cargo)   { mostrarToast("Selecione o cargo."); return; }
-  if (!setor)   { mostrarToast("Informe o setor."); return; }
-  if (!salario) { mostrarToast("Informe o salário."); return; }
+  const cargo       = document.getElementById("tsEditCargo").value.trim();
+  const setor       = document.getElementById("tsEditSetor").value.trim();
+  const salario_clt = document.getElementById("tsEditSalarioClt").value.trim();
+  const salario_pj  = document.getElementById("tsEditSalarioPj").value.trim();
+  if (!cargo) { mostrarToast("Selecione o cargo."); return; }
+  if (!setor) { mostrarToast("Informe o setor."); return; }
+  if (!salario_clt && !salario_pj) { mostrarToast("Informe ao menos um salário (CLT ou PJ)."); return; }
   try {
-    await sbEditarEntradaSalarial(_tsEditId, cargo.toUpperCase(), setor, salario);
+    await sbEditarEntradaSalarial(_tsEditId, cargo.toUpperCase(), setor, salario_clt, salario_pj);
     fecharModal("modalEditarSalarial");
     mostrarToast("Entrada atualizada.");
     _tabelaSalarial = await sbCarregarTabelaSalarial();

@@ -202,7 +202,7 @@
                       <th>Tipo</th>
                       <th>Solicitante</th>
                       <th>Cargo / Vaga</th>
-                      <th>Projeto / Depto</th>
+                      <th>Projetos</th>
                       <th>Status</th>
                       <th>Criado em</th>
                       <th>Atualizado</th>
@@ -656,9 +656,13 @@
         <label class="form-label required">Setor</label>
         <input id="tsSetor" class="form-control" placeholder="Ex: Projetos, Inovação..." autocomplete="off" />
       </div>
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label">Salário CLT</label>
+        <input id="tsSalarioClt" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+      </div>
       <div class="form-group">
-        <label class="form-label required">Salário</label>
-        <input id="tsSalario" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+        <label class="form-label">Salário PJ</label>
+        <input id="tsSalarioPj" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
       </div>
     </div>
     <div class="modal-footer">
@@ -684,9 +688,13 @@
         <label class="form-label required">Setor</label>
         <input id="tsEditSetor" class="form-control" autocomplete="off" />
       </div>
+      <div class="form-group" style="margin-bottom:.8rem">
+        <label class="form-label">Salário CLT</label>
+        <input id="tsEditSalarioClt" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+      </div>
       <div class="form-group">
-        <label class="form-label required">Salário</label>
-        <input id="tsEditSalario" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
+        <label class="form-label">Salário PJ</label>
+        <input id="tsEditSalarioPj" class="form-control mask-real" placeholder="R$ 0,00" autocomplete="off" oninput="mascaraReais(this)" />
       </div>
     </div>
     <div class="modal-footer">
